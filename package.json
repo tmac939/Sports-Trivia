@@ -1,0 +1,8 @@
+{
+  "name": "sports-trivia",
+  "version": "1.0.0",
+  "description": "Ball Knowledge — Multiplayer Sports Trivia",
+  "engines": {
+    "node": "18.x"
+  }
+}

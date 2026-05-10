@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -67,8 +67,8 @@ Generate ${qcount} questions now as a raw JSON array:`;
     });
 
     const raw = await response.json();
-    console.log('Claude response status:', response.status);
-    console.log('Claude response body:', JSON.stringify(raw).slice(0, 500));
+    console.log('Claude status:', response.status);
+    console.log('Claude body:', JSON.stringify(raw).slice(0, 500));
 
     if (!response.ok) {
       return res.status(500).json({ error: 'Claude API error', details: raw });
@@ -88,6 +88,6 @@ Generate ${qcount} questions now as a raw JSON array:`;
 
   } catch (err) {
     console.error('Generation error:', err);
-    return res.status(500).json({ error: 'Failed to generate questions', details: err.message });
+    return res.status(500).json({ error: err.message });
   }
 }

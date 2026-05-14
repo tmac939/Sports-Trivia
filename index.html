@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -774,7 +773,8 @@ function listHit(slotIdx, inp) {
   if (fb) { fb.textContent = `✓ ${q.items[slotIdx]}!`; fb.className = 'list-feedback hit'; }
 
   if (listFound.every(Boolean)) {
-    const bonus = Math.ceil(timerSecs / QUESTION_TIME * 300) + 300 * q.items.length;
+    const qTime = getQuestionTime(q);
+    const bonus = Math.ceil(timerSecs / qTime * 300) + 300 * q.items.length;
     myScore += bonus;
     myAnswers[currentQIdx] = 'complete';
     saveAnswer(currentQIdx, 'complete', myScore);
@@ -802,9 +802,18 @@ async function saveAnswer(qIdx, answer, score) {
 }
 
 // ── TIMER ──
+function getQuestionTime(q) {
+  if (!q || q.type === 'mc') return QUESTION_TIME;
+  const count = q.items ? q.items.length : 0;
+  if (count >= 5) return 60;
+  if (count >= 4) return 45;
+  return 25;
+}
+
 function startTimer() {
   if (questionTimer) clearInterval(questionTimer);
-  timerSecs = QUESTION_TIME;
+  const q = questions[currentQIdx];
+  timerSecs = getQuestionTime(q);
   updateTimerDisplay();
   questionTimer = setInterval(async () => {
     timerSecs--;

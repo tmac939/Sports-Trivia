@@ -778,8 +778,10 @@ function listHit(slotIdx, inp) {
     myScore += bonus;
     myAnswers[currentQIdx] = 'complete';
     saveAnswer(currentQIdx, 'complete', myScore);
-    // Show completed list locally — timer still runs for everyone
     renderList(q);
+    // All answers found — stop timer and advance immediately
+    if (questionTimer) clearInterval(questionTimer);
+    if (isHost) setTimeout(async () => await advanceQuestion(), 1500);
   } else {
     myScore += 200;
     saveAnswer(currentQIdx, 'partial', myScore);
@@ -792,8 +794,10 @@ function listGiveUp() {
   myAnswers[currentQIdx] = 'gaveup';
   saveAnswer(currentQIdx, 'gaveup', myScore);
   const q = questions[currentQIdx];
-  // Show revealed answers locally — timer still runs for everyone
   renderList(q);
+  // Wait 3 seconds so players can read the revealed answers, then advance
+  if (questionTimer) clearInterval(questionTimer);
+  if (isHost) setTimeout(async () => await advanceQuestion(), 3000);
 }
 
 // ── SAVE ANSWER ──

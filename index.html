@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -642,12 +643,8 @@ function answerMC(chosen) {
     myScore += bonus;
   }
   saveAnswer(currentQIdx, chosen, myScore);
+  // Show result locally — timer still runs for everyone
   renderMC(q);
-  // Auto-advance after 2 seconds so player can see result
-  if (questionTimer) clearInterval(questionTimer);
-  setTimeout(async () => {
-    if (isHost) await advanceQuestion();
-  }, 2000);
 }
 
 // ── LIST FORMAT ──
@@ -758,12 +755,8 @@ function listHit(slotIdx, inp) {
     myScore += bonus;
     myAnswers[currentQIdx] = 'complete';
     saveAnswer(currentQIdx, 'complete', myScore);
+    // Show completed list locally — timer still runs for everyone
     renderList(q);
-    // Auto-advance after 2 seconds so player can see completed list
-    if (questionTimer) clearInterval(questionTimer);
-    setTimeout(async () => {
-      if (isHost) await advanceQuestion();
-    }, 2000);
   } else {
     myScore += 200;
     saveAnswer(currentQIdx, 'partial', myScore);
@@ -776,12 +769,8 @@ function listGiveUp() {
   myAnswers[currentQIdx] = 'gaveup';
   saveAnswer(currentQIdx, 'gaveup', myScore);
   const q = questions[currentQIdx];
+  // Show revealed answers locally — timer still runs for everyone
   renderList(q);
-  // Auto-advance after 2.5 seconds so player can see the revealed answers
-  if (questionTimer) clearInterval(questionTimer);
-  setTimeout(async () => {
-    if (isHost) await advanceQuestion();
-  }, 2500);
 }
 
 // ── SAVE ANSWER ──

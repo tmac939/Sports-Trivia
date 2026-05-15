@@ -386,7 +386,7 @@
 const SUPABASE_URL = 'https://dvdcwpqixtnlzdhkvgik.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2ZGN3cHFpeHRubHpkaGt2Z2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMjc3MDcsImV4cCI6MjA5MzkwMzcwN30.6i5iIBZqWlxlcx4wgRDRQhZfQxRG0lYjqc7dtquRxxY';
 const API_BASE = '/api';
-const QUESTION_TIME = 10; // seconds per question
+const QUESTION_TIME = 12; // seconds per question
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -691,8 +691,7 @@ function renderList(q) {
 
   const inputHTML = (!answered && myAnswers[currentQIdx] !== 'gaveup') ? `
     <div class="list-input-wrap">
-      <div class="list-ghost" id="list-ghost"></div>
-      <input class="list-input" id="list-input" placeholder="Start typing a name…" autocomplete="off"
+      <input class="list-input" id="list-input" placeholder="Start typing a name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
         oninput="handleListInput()" onkeydown="handleListKey(event)" />
     </div>
     <div class="list-feedback" id="list-feedback"></div>
@@ -719,26 +718,9 @@ function norm(s) { return s.trim().toLowerCase().replace(/[^a-z0-9 ]/g,'').repla
 
 function handleListInput() {
   const inp = document.getElementById('list-input');
-  const ghost = document.getElementById('list-ghost');
   const q = questions[currentQIdx];
   if (!inp || !q) return;
-  const typed = inp.value;
-  const t = norm(typed);
-
-  // Ghost suggestion
-  let suggestion = null;
-  for (let i = 0; i < q.items.length; i++) {
-    if (listFound[i]) continue;
-    for (const alias of (q.aliases?.[i] || [norm(q.items[i])])) {
-      const a = norm(alias);
-      if (a.startsWith(t) && a.length > t.length) {
-        suggestion = alias;
-        break;
-      }
-    }
-    if (suggestion) break;
-  }
-  if (ghost) ghost.textContent = suggestion ? typed + suggestion.slice(typed.length) : '';
+  const t = norm(inp.value);
 
   // Exact match → auto accept
   for (let i = 0; i < q.items.length; i++) {
@@ -752,14 +734,8 @@ function handleListInput() {
 }
 
 function handleListKey(e) {
-  if (e.key === 'Tab' || e.key === 'ArrowRight') {
-    const ghost = document.getElementById('list-ghost');
-    const inp = document.getElementById('list-input');
-    if (ghost && ghost.textContent && inp) {
-      e.preventDefault();
-      inp.value = ghost.textContent;
-      handleListInput();
-    }
+  if (e.key === 'Enter') {
+    e.preventDefault();
   }
 }
 
@@ -767,8 +743,6 @@ function listHit(slotIdx, inp) {
   const q = questions[currentQIdx];
   listFound[slotIdx] = true;
   inp.value = '';
-  const ghost = document.getElementById('list-ghost');
-  if (ghost) ghost.textContent = '';
   const fb = document.getElementById('list-feedback');
   if (fb) { fb.textContent = `✓ ${q.items[slotIdx]}!`; fb.className = 'list-feedback hit'; }
 

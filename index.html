@@ -300,6 +300,10 @@
     .niche-found { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:1rem; min-height:36px; }
     .niche-tag  { display:flex; align-items:center; gap:6px; padding:5px 10px; background:var(--green-bg); border:1px solid var(--green-bd); border-radius:99px; font-size:13px; color:var(--green); font-weight:500; }
     .niche-tag .pts { font-size:10px; font-weight:700; opacity:.7; }
+    .niche-tag.tier-iconic  { background:#EDE8DF; border-color:var(--border);    color:var(--text2); }
+    .niche-tag.tier-known   { background:var(--blue-bg,#DDEAF9); border-color:#AECBF5; color:var(--blue); }
+    .niche-tag.tier-niche   { background:var(--green-bg); border-color:var(--green-bd); color:var(--green); }
+    .niche-tag.tier-deepcut { background:#F9EAE3; border-color:var(--accent); color:var(--accent); }
     .niche-count { font-size:13px; color:var(--text2); margin-bottom:.5rem; }
     .niche-input { width:100%; padding:12px 14px; border-radius:var(--rsm); border:1px solid var(--border); background:var(--bg2); color:var(--text); font-size:16px; margin-bottom:8px; }
     .niche-input:focus { outline:none; border-color:var(--accent); }
@@ -1105,16 +1109,16 @@ function nicheKey(e) {
     inp.value=''; return;
   }
 
-  // Valid, new answer — calculate niche score
-  const totalItems = q.items.length;
-  const positionBonus = Math.floor((totalItems - hitIdx) / totalItems * 1000);
-  const pts = 500 + positionBonus;
+  // Valid, new answer — score based on the answer's obscurity tier (set by the AI, not list position)
+  const TIER_POINTS = { iconic: 250, known: 500, niche: 750, deepcut: 1000 };
+  const tier = (q.tiers && q.tiers[hitIdx]) ? q.tiers[hitIdx] : 'known';
+  const pts = TIER_POINTS[tier] || 500;
   myScore += pts;
-  nicheFound.push({ idx: hitIdx, name: q.items[hitIdx], pts });
+  nicheFound.push({ idx: hitIdx, name: q.items[hitIdx], pts, tier });
   inp.value='';
   // Update UI
   const foundEl = document.getElementById('niche-found');
-  if(foundEl) foundEl.innerHTML = nicheFound.map(f=>`<div class="niche-tag">${f.name}<span class="pts">+${f.pts}</span></div>`).join('');
+  if(foundEl) foundEl.innerHTML = nicheFound.map(f=>`<div class="niche-tag tier-${f.tier}">${f.name}<span class="pts">+${f.pts}</span></div>`).join('');
   const countEl = document.getElementById('niche-count');
   if(countEl) countEl.textContent = `${nicheFound.length} found`;
   const fb=document.getElementById('niche-fb');

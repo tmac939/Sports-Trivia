@@ -460,7 +460,7 @@
       </div>
     </div>
 
-    <div class="field">
+    <div class="field" id="decade-field">
       <label>Decade</label>
       <div class="chip-row" id="decade-chips">
         <div class="chip" onclick="pick('decade','1970s')">1970s</div>
@@ -511,8 +511,8 @@
     <div class="summary-card">
       <div class="sum-row"><span class="sum-key">Mode</span><span class="sum-val" id="s-mode">—</span></div>
       <div class="sum-row"><span class="sum-key">League</span><span class="sum-val" id="s-league">—</span></div>
-      <div class="sum-row"><span class="sum-key">Format</span><span class="sum-val" id="s-format">—</span></div>
-      <div class="sum-row"><span class="sum-key">Decade</span><span class="sum-val" id="s-decade">—</span></div>
+      <div class="sum-row" id="s-format-row"><span class="sum-key">Format</span><span class="sum-val" id="s-format">—</span></div>
+      <div class="sum-row" id="s-decade-row"><span class="sum-key">Decade</span><span class="sum-val" id="s-decade">—</span></div>
       <div class="sum-row"><span class="sum-key">Difficulty</span><span class="sum-val" id="s-difficulty">—</span></div>
       <div class="sum-row" id="s-qcount-row"><span class="sum-key">Questions</span><span class="sum-val" id="s-qcount">10</span></div>
     </div>
@@ -663,10 +663,19 @@ function goToSetup() {
   document.getElementById('setup-title').textContent = info.label + ' — Settings';
   document.getElementById('mode-info-bar').textContent = 'ℹ️  ' + info.info;
   document.getElementById('s-mode').textContent = info.label;
+
+  const isNiche = selectedMode === 'niche';
+
   document.getElementById('format-field').style.display = (selectedMode === 'classic') ? '' : 'none';
-  document.getElementById('qcount-field').style.display = (selectedMode === 'niche') ? 'none' : '';
-  document.getElementById('s-qcount-row').style.display = (selectedMode === 'niche') ? 'none' : '';
+  document.getElementById('s-format-row').style.display = (selectedMode === 'classic') ? '' : 'none';
+  document.getElementById('decade-field').style.display = isNiche ? 'none' : '';
+  document.getElementById('s-decade-row').style.display = isNiche ? 'none' : '';
+  document.getElementById('qcount-field').style.display = isNiche ? 'none' : '';
+  document.getElementById('s-qcount-row').style.display = isNiche ? 'none' : '';
+
   if (selectedMode !== 'classic') { settings.format = 'Multiple choice'; document.getElementById('s-format').textContent = 'Auto'; }
+  if (isNiche) { settings.decade = 'All eras'; settings.qcount = 3; document.getElementById('s-decade').textContent='All eras'; document.getElementById('s-qcount').textContent='3 rounds'; }
+
   validateSetup();
   showScreen('setup');
 }
@@ -691,10 +700,12 @@ function pick(key, val) {
 }
 
 function validateSetup() {
-  const needFormat = selectedMode === 'classic';
-  const ok = settings.league && settings.decade && settings.difficulty &&
+  const isClassic = selectedMode === 'classic';
+  const isNiche = selectedMode === 'niche';
+  const ok = settings.league && settings.difficulty &&
     document.getElementById('host-name').value.trim() &&
-    (!needFormat || settings.format);
+    (!isClassic || settings.format) &&
+    (isNiche || settings.decade);
   document.getElementById('create-btn').disabled = !ok;
 }
 
@@ -1073,30 +1084,33 @@ function nicheKey(e) {
   if(!inp||!inp.value.trim()) return;
   const q = questions[nicheRoundIdx]||questions[0];
   const t = norm(inp.value);
-  // Check if already found
-  if(nicheFound.some(f=>norm(f.name)===t)){ 
-    const fb=document.getElementById('niche-fb'); 
-    if(fb){fb.textContent='Already named that one!';fb.className='niche-fb miss';} 
-    inp.value=''; return; 
-  }
-  // Check against valid answers
+
+  // Find which answer index (if any) this input matches
   let hitIdx = -1;
   for(let i=0;i<(q.items||[]).length;i++){
     const aliases=(q.aliases?.[i]||[norm(q.items[i])]).map(a=>norm(a));
     if(aliases.includes(t)){ hitIdx=i; break; }
   }
+
   if(hitIdx === -1){
     const fb=document.getElementById('niche-fb');
     if(fb){fb.textContent='Not on the list — keep going.';fb.className='niche-fb miss';}
     inp.value=''; return;
   }
-  // Valid answer — calculate niche score
-  // We'll use a simple tiebreaker: 500 base, less common = more pts (simulated by order)
+
+  // Already found this answer (by index, so any alias is caught) — block repeat scoring
+  if(nicheFound.some(f=>f.idx===hitIdx)){
+    const fb=document.getElementById('niche-fb');
+    if(fb){fb.textContent=`Already named ${q.items[hitIdx]}!`;fb.className='niche-fb miss';}
+    inp.value=''; return;
+  }
+
+  // Valid, new answer — calculate niche score
   const totalItems = q.items.length;
   const positionBonus = Math.floor((totalItems - hitIdx) / totalItems * 1000);
   const pts = 500 + positionBonus;
   myScore += pts;
-  nicheFound.push({ name: q.items[hitIdx], pts });
+  nicheFound.push({ idx: hitIdx, name: q.items[hitIdx], pts });
   inp.value='';
   // Update UI
   const foundEl = document.getElementById('niche-found');

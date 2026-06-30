@@ -41,18 +41,33 @@ Format:
 Generate all 12 questions now:`;
   }
 
-  // ── NAME THE NICHE: list-style, large answer pools ──
+  // ── NAME THE NICHE: list-style, large answer pools with explicit obscurity tiers ──
   else if (mode === 'niche') {
     prompt = `You are a hardcore sports trivia question generator. Generate exactly 3 "Name the Niche" trivia questions with these settings:
 - League: ${league}
-- Decade: ${decade}
 - Difficulty: ${difficulty}
 
 Each question asks players to name as many valid answers as possible from a large pool within 2 minutes.
-Questions should have 8-15 valid answers so players can find obvious ones AND obscure ones.
-Obscure answers should be genuinely harder to think of, rewarding deep knowledge.
+Questions should have 10-15 valid answers.
 
-Every fact must be 100% accurate.
+CRITICAL — TIER RATING RULES:
+For every answer, assign a "tier" based on genuine real-world recognizability. This must be honest and accurate. Do NOT rate everything "known" — you must include all 4 tiers.
+
+Tier definitions with concrete NFL examples:
+- "iconic"   = a casual fan who barely watches knows this instantly. Examples: Tom Brady, LeBron James, Michael Jordan, Patrick Mahomes, Peyton Manning, Kobe Bryant, Super Bowl champions most people know.
+- "known"    = a regular fan who follows the league would get this. Examples: Derrick Henry, Justin Jefferson, Nick Bosa, Josh Allen. You watch the sport, you know these names.
+- "niche"    = only fans who watch closely, follow stats, or know the era well would recall. Examples: Tyler Lockett, Amon-Ra St. Brown, Dameon Pierce, a backup starter who had one good season.
+- "deepcut"  = true experts and stat-heads only. Examples: a 3rd-string QB who started 4 games, a lineman who made one Pro Bowl, someone who led the league in a minor stat category one year.
+
+REQUIRED DISTRIBUTION: Every question MUST have roughly:
+- 2-3 "iconic" answers
+- 3-4 "known" answers  
+- 3-4 "niche" answers
+- 2-3 "deepcut" answers
+
+Do NOT assign "known" to everyone. Do NOT make all answers the same tier. A player like Dak Prescott is "iconic." A player like Brandin Cooks is "niche." A player like Dontrell Hilliard is "deepcut."
+
+Every fact must be 100% accurate. Do not invent players or stats.
 
 Return ONLY a valid JSON array. No markdown, no explanation.
 
@@ -61,16 +76,19 @@ Format:
   "type": "list",
   "category": "Category label",
   "question": "Name as many [X] as you can",
-  "sub": "2 minutes — name as many as possible. Obscure answers score more.",
-  "items": ["Answer 1", "Answer 2", ... up to 15 answers],
+  "sub": "2 minutes — name as many as possible. More obscure answers score more points.",
+  "items": ["Answer 1", "Answer 2", ...],
+  "tiers": ["iconic", "known", "niche", "deepcut", ...],
   "labels": ["Label 1", "Label 2", ...],
   "stats": ["Stat or context 1", "Stat or context 2", ...],
-  "aliases": [["answer1","alias1"], ["answer2","alias2"], ...],
+  "aliases": [["answer1","alias1","last name only"], ["answer2","alias2","last name only"], ...],
   "fact": "Short interesting fact about this group."
 }
 
-All four arrays (items, labels, stats, aliases) must be the same length.
-Aliases should be lowercase, no punctuation, include common nicknames and last-name-only versions.
+IMPORTANT ALIAS RULE: every answer's alias array MUST include the player's last name only as one of the entries (e.g. for "Patrick Mahomes" include "mahomes"). This allows players to type just a last name.
+
+All five arrays (items, tiers, labels, stats, aliases) must be exactly the same length.
+Aliases should be lowercase, no punctuation.
 
 Generate 3 niche questions now:`;
   }

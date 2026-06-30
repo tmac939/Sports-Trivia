@@ -564,6 +564,8 @@ async function saveAndApprove(id) {
 }
 
 // ── FACT CHECK / VERIFY ──
+let lastVerification = {}; // id -> verification result, used by autofix
+
 async function verifyQuestion(id) {
   const row = pendingQuestions.find(r => r.id === id);
   if (!row) return;
@@ -581,6 +583,8 @@ async function verifyQuestion(id) {
     const result = await res.json();
     if (result.error) throw new Error(result.error);
 
+    lastVerification[id] = result;
+
     let html = `<div class="verify-box ${result.verdict}">
       <span class="verify-label">${result.verdict === 'correct' ? '✓ Looks accurate' : result.verdict === 'incorrect' ? '✗ Issue found' : '⚠ Uncertain'}</span>
       ${result.explanation || ''}`;
@@ -594,6 +598,15 @@ async function verifyQuestion(id) {
     if (result.suggestedCorrection) {
       html += `<br/><strong>Suggested correction:</strong> ${result.suggestedCorrection}`;
     }
+
+    // Show auto-fix button if there's actually something to fix
+    const hasIssue = result.verdict === 'incorrect' ||
+      (result.missingAnswers && result.missingAnswers.length) ||
+      (result.incorrectAnswers && result.incorrectAnswers.length);
+    if (hasIssue) {
+      html += `<br/><button class="btn btn-accent" style="margin-top:10px;font-size:12px;padding:7px 14px;" id="autofix-btn-${id}" onclick="autoFixQuestion('${id}')">🔧 Auto-fix this question</button>`;
+    }
+
     html += `</div>`;
     if (resultEl) resultEl.innerHTML = html;
   } catch(e) {
@@ -601,6 +614,40 @@ async function verifyQuestion(id) {
   }
 
   if (btn) { btn.disabled = false; btn.textContent = '🔍 Verify with web search'; }
+}
+
+async function autoFixQuestion(id) {
+  const row = pendingQuestions.find(r => r.id === id);
+  if (!row) return;
+  const verification = lastVerification[id];
+  if (!verification) { showToast('Run Verify first'); return; }
+
+  const fixBtn = document.getElementById('autofix-btn-'+id);
+  const resultEl = document.getElementById('verify-result-'+id);
+  if (fixBtn) { fixBtn.disabled = true; fixBtn.textContent = '🔧 Fixing…'; }
+
+  try {
+    const res = await fetch('/api/autofix', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: row.data, verification })
+    });
+    const result = await res.json();
+    if (result.error) throw new Error(result.error);
+    if (!result.corrected) throw new Error('No corrected question returned');
+
+    // Apply the corrected data to this row
+    row.data = result.corrected;
+    row.question = result.corrected.question;
+    row.category = result.corrected.category;
+    delete lastVerification[id];
+
+    showToast('✓ Question corrected — please re-verify to confirm');
+    renderReviewList();
+  } catch(e) {
+    if (resultEl) resultEl.innerHTML += `<div class="verify-box incorrect" style="margin-top:8px;">Auto-fix failed: ${e.message}</div>`;
+    if (fixBtn) { fixBtn.disabled = false; fixBtn.textContent = '🔧 Auto-fix this question'; }
+  }
 }
 
 async function approveQuestion(id) {

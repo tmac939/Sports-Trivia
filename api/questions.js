@@ -97,6 +97,8 @@ Return ONLY a JSON array. Each item: {"type":"mc","category":"...","question":".
 
 CRITICAL: The category must be a BOUNDED, FULLY ENUMERABLE set — every single valid answer must appear in "items" with zero omissions. Reject open-ended categories like "name RBs who rushed 1000+ yards since 2015" (too many answers, can't list them all). Instead use categories tied to a fixed year range or fixed structural count, e.g. "every Super Bowl champion in the 2010s," "every #1 draft pick 2015-2024," "every NFL MVP since 2010," "all 32 NFL teams." Before finalizing, verify you have listed every correct answer with none missing and none extra. If you can't be 100% sure the list is complete, pick a narrower category.
 
+STRONG PREFERENCE: prioritize stat-based categories across these angles — season leaders (e.g. "every rushing yards leader 2014-2023"), career milestones/records (e.g. "every QB with 5+ Super Bowl rings," "every RB with a 2,000-yard season" — pick rare enough thresholds the list is short), and single-game performances (e.g. "every player to rush for 250+ yards in a game"). Use a specific numeric threshold or exact year range so the set stays small and fully verifiable. At least 2 of the ${qcount} questions should be stat-based, mixing across these angles.
+
 Each answer needs a "tier": iconic(2-3 per question), known(3-4), niche(3-4), deepcut(2-3). Do not rate everything the same tier.
 Every fact must be accurate — do not invent players, teams, or years.
 

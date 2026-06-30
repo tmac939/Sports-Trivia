@@ -43,7 +43,7 @@ Generate all 12 questions now:`;
 
   // ── NAME THE NICHE: list-style, EXHAUSTIVE bounded answer sets only ──
   else if (mode === 'niche') {
-    prompt = `You are a hardcore sports trivia question generator. Generate exactly 3 "Name the Niche" trivia questions with these settings:
+    prompt = `You are a hardcore sports trivia question generator. Generate exactly ${qcount} "Name the Niche" trivia questions with these settings:
 - League: ${league}
 - Difficulty: ${difficulty}
 
@@ -101,7 +101,7 @@ IMPORTANT ALIAS RULE: every answer's alias array MUST include the player's last 
 All five arrays (items, tiers, labels, stats, aliases) must be exactly the same length.
 Aliases should be lowercase, no punctuation.
 
-Generate 3 niche questions now:`;
+Generate ${qcount} niche questions now:`;
   }
 
   // ── CLASSIC ──

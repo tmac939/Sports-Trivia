@@ -1053,7 +1053,7 @@ function renderNicheQuestion() {
     <div class="niche-timer-label">seconds remaining</div>
     <div class="niche-count" id="niche-count">0 found</div>
     <div class="niche-found" id="niche-found"></div>
-    <input class="niche-input" id="niche-input" placeholder="Type a name and press Enter…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="nicheKey(event)" />
+    <input class="niche-input" id="niche-input" placeholder="Type a name — auto-submits on match…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" oninput="handleNicheInput()" onkeydown="if(event.key==='Enter')event.preventDefault()" />
     <div class="niche-fb" id="niche-fb"></div>
   `;
   setTimeout(()=>{ const i=document.getElementById('niche-input'); if(i) i.focus(); }, 80);
@@ -1082,40 +1082,49 @@ function startNicheTimer() {
   },1000);
 }
 
-function nicheKey(e) {
-  if(e.key !== 'Enter') return;
+function handleNicheInput() {
   const inp = document.getElementById('niche-input');
-  if(!inp||!inp.value.trim()) return;
+  if(!inp) return;
   const q = questions[nicheRoundIdx]||questions[0];
+  if(!q) return;
   const t = norm(inp.value);
+  if(!t) return;
 
-  // Find which answer index (if any) this input matches
+  // Build match function — checks aliases AND last-name-only for every item
+  function matchesAnswer(idx) {
+    const fullAliases = (q.aliases?.[idx]||[norm(q.items[idx])]).map(a=>norm(a));
+    // Also derive last name from the canonical item name
+    const lastName = norm(q.items[idx]).split(' ').pop();
+    const allTokens = [...fullAliases, lastName];
+    return allTokens.includes(t);
+  }
+
+  // Find matching unfound answer
   let hitIdx = -1;
   for(let i=0;i<(q.items||[]).length;i++){
-    const aliases=(q.aliases?.[i]||[norm(q.items[i])]).map(a=>norm(a));
-    if(aliases.includes(t)){ hitIdx=i; break; }
+    if(nicheFound.some(f=>f.idx===i)) continue; // already found
+    if(matchesAnswer(i)){ hitIdx=i; break; }
   }
 
-  if(hitIdx === -1){
-    const fb=document.getElementById('niche-fb');
-    if(fb){fb.textContent='Not on the list — keep going.';fb.className='niche-fb miss';}
-    inp.value=''; return;
+  if(hitIdx === -1) {
+    // Check if it matches an already-found answer (don't show miss feedback while still typing)
+    const alreadyFound = (q.items||[]).some((_,i)=>nicheFound.some(f=>f.idx===i) && matchesAnswer(i));
+    if(alreadyFound) {
+      const fb=document.getElementById('niche-fb');
+      if(fb){fb.textContent='Already got that one!';fb.className='niche-fb miss';}
+      inp.value='';
+    }
+    return;
   }
 
-  // Already found this answer (by index, so any alias is caught) — block repeat scoring
-  if(nicheFound.some(f=>f.idx===hitIdx)){
-    const fb=document.getElementById('niche-fb');
-    if(fb){fb.textContent=`Already named ${q.items[hitIdx]}!`;fb.className='niche-fb miss';}
-    inp.value=''; return;
-  }
-
-  // Valid, new answer — score based on the answer's obscurity tier (set by the AI, not list position)
+  // Valid new answer — score it
   const TIER_POINTS = { iconic: 250, known: 500, niche: 750, deepcut: 1000 };
   const tier = (q.tiers && q.tiers[hitIdx]) ? q.tiers[hitIdx] : 'known';
   const pts = TIER_POINTS[tier] || 500;
   myScore += pts;
   nicheFound.push({ idx: hitIdx, name: q.items[hitIdx], pts, tier });
   inp.value='';
+
   // Update UI
   const foundEl = document.getElementById('niche-found');
   if(foundEl) foundEl.innerHTML = nicheFound.map(f=>`<div class="niche-tag tier-${f.tier}">${f.name}<span class="pts">+${f.pts}</span></div>`).join('');

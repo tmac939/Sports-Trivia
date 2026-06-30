@@ -93,8 +93,13 @@ Return ONLY a JSON array. Each item: {"type":"mc","category":"...","question":".
   }
 
   if (mode === 'niche') {
-    return `Generate exactly ${qcount} Name the Niche questions. League: ${league} | Difficulty: ${difficulty}
-Each has 10-15 answers. Each answer needs a "tier": iconic(2-3), known(3-4), niche(3-4), deepcut(2-3).
+    return `Generate exactly ${qcount} "Name the Niche" questions. League: ${league} | Difficulty: ${difficulty}
+
+CRITICAL: The category must be a BOUNDED, FULLY ENUMERABLE set — every single valid answer must appear in "items" with zero omissions. Reject open-ended categories like "name RBs who rushed 1000+ yards since 2015" (too many answers, can't list them all). Instead use categories tied to a fixed year range or fixed structural count, e.g. "every Super Bowl champion in the 2010s," "every #1 draft pick 2015-2024," "every NFL MVP since 2010," "all 32 NFL teams." Before finalizing, verify you have listed every correct answer with none missing and none extra. If you can't be 100% sure the list is complete, pick a narrower category.
+
+Each answer needs a "tier": iconic(2-3 per question), known(3-4), niche(3-4), deepcut(2-3). Do not rate everything the same tier.
+Every fact must be accurate — do not invent players, teams, or years.
+
 Return ONLY a JSON array. Each item: {"type":"list","category":"...","question":"Name as many [X] as you can","sub":"2 minutes","items":[...],"tiers":[...],"labels":[...],"stats":[...],"aliases":[[...]],"fact":"..."}
 All five arrays same length. Aliases include last-name-only.`;
   }

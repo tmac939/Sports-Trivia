@@ -814,7 +814,7 @@ async function startGame() {
   document.getElementById('gen-state').style.display = 'block';
   await sb.from('rooms').update({ status:'generating' }).eq('id', myRoomId);
   try {
-    const res = await fetch(`${API_BASE}/generate`, {
+    const res = await fetch(`${API_BASE}/questions`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ settings:{...settings}, roomId:myRoomId })
     });

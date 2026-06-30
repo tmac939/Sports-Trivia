@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ball Knowledge — Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg:#F5F0E8; --bg2:#EDE8DF; --bg3:#E4DDD2; --border:#C8B89A;
+      --text:#1A1A1A; --text2:#6B5E4E; --text3:#A0917E;
+      --green:#1B6B3A; --green-bg:#D6EDDF; --green-bd:#5BAD80;
+      --red:#B03A2E; --red-bg:#F5D5D2; --red-bd:#D9736A;
+      --accent:#C4501A; --blue:#1B4FCC; --r:10px; --rsm:7px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;}
+
+    /* ── LOGIN ── */
+    #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem;}
+    .login-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:2rem;width:100%;max-width:340px;text-align:center;}
+    .login-logo{font-size:1.6rem;font-weight:700;color:var(--blue);font-family:Georgia,serif;margin-bottom:4px;}
+    .login-sub{font-size:13px;color:var(--text2);margin-bottom:1.5rem;}
+    .login-input{width:100%;padding:11px 14px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:15px;margin-bottom:12px;text-align:center;letter-spacing:3px;}
+    .login-input:focus{outline:none;border-color:var(--accent);}
+    .login-err{font-size:13px;color:var(--red);min-height:18px;margin-bottom:8px;}
+
+    /* ── MAIN LAYOUT ── */
+    #app{display:none;min-height:100vh;flex-direction:column;}
+    .topbar{background:var(--text);color:var(--bg);padding:12px 1.5rem;display:flex;align-items:center;justify-content:space-between;}
+    .topbar-logo{font-size:16px;font-weight:700;font-family:Georgia,serif;}
+    .topbar-logo span{color:var(--accent);}
+    .topbar-nav{display:flex;gap:8px;}
+    .tab-btn{padding:6px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;transition:all .15s;}
+    .tab-btn.active,.tab-btn:hover{background:rgba(255,255,255,.15);color:#fff;}
+    .main{flex:1;padding:1.5rem;max-width:860px;margin:0 auto;width:100%;}
+
+    /* ── SHARED ── */
+    .btn{padding:10px 20px;border-radius:var(--rsm);border:none;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+    .btn:hover{opacity:.85;}
+    .btn:disabled{opacity:.35;cursor:default;}
+    .btn-accent{background:var(--accent);color:var(--bg);}
+    .btn-blue{background:var(--blue);color:#fff;}
+    .btn-green{background:var(--green);color:#fff;}
+    .btn-red{background:var(--red);color:#fff;}
+    .btn-ghost{background:var(--bg2);color:var(--text);border:1px solid var(--border);}
+    .section-title{font-size:20px;font-weight:700;margin-bottom:4px;}
+    .section-sub{font-size:13px;color:var(--text2);margin-bottom:1.5rem;}
+    .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;}
+    .chip{padding:7px 14px;border-radius:99px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:13px;cursor:pointer;user-select:none;transition:all .12s;}
+    .chip.sel{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:600;}
+    .field{margin-bottom:1.25rem;}
+    .field label{display:block;font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;font-weight:600;}
+    .field input,.field select,.field textarea{width:100%;padding:10px 12px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;}
+    .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);}
+    .field textarea{min-height:80px;resize:vertical;font-family:inherit;}
+    .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;margin-bottom:1rem;}
+    .badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600;}
+    .badge-iconic{background:#EDE8DF;color:var(--text2);border:1px solid var(--border);}
+    .badge-known{background:#DDEAF9;color:var(--blue);border:1px solid #AECBF5;}
+    .badge-niche{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
+    .badge-deepcut{background:#F9EAE3;color:var(--accent);border:1px solid var(--accent);}
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);border-radius:var(--rsm);padding:10px 18px;font-size:13px;font-weight:500;z-index:999;white-space:nowrap;animation:tin .2s ease;}
+    @keyframes tin{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+    .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ── GENERATE TAB ── */
+    .gen-settings{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;}
+    .gen-row{display:flex;gap:10px;align-items:center;margin-bottom:1.5rem;}
+    .queue-count{font-size:13px;color:var(--text2);}
+
+    /* ── REVIEW CARD ── */
+    .review-card{background:var(--bg2);border:2px solid var(--border);border-radius:var(--r);padding:1.5rem;margin-bottom:1rem;}
+    .review-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+    .review-q{font-size:17px;font-weight:600;margin-bottom:1rem;line-height:1.45;}
+    .review-actions{display:flex;gap:8px;margin-top:1.25rem;flex-wrap:wrap;}
+
+    /* MC options editor */
+    .mc-option{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+    .mc-option input[type=text]{flex:1;}
+    .mc-option input[type=radio]{flex-shrink:0;width:16px;height:16px;accent-color:var(--accent);}
+    .correct-label{font-size:11px;color:var(--green);font-weight:600;white-space:nowrap;}
+
+    /* List items editor */
+    .list-item-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
+    .list-item-row .item-name{flex:2;min-width:120px;}
+    .list-item-row .item-stat{flex:1;min-width:80px;}
+    .list-item-row .item-tier{width:110px;}
+    .list-item-row .item-aliases{flex:2;min-width:120px;}
+    .list-item-row .del-btn{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:var(--rsm);padding:6px 10px;cursor:pointer;font-size:12px;white-space:nowrap;}
+    .add-item-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+    .col-headers{display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;}
+    .col-header{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;}
+    .col-header.nm{flex:2;min-width:120px;}
+    .col-header.st{flex:1;min-width:80px;}
+    .col-header.ti{width:110px;}
+    .col-header.al{flex:2;min-width:120px;}
+
+    /* ── BANK TAB ── */
+    .bank-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem;}
+    .bank-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rsm);padding:1rem 1.25rem;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;}
+    .bank-item-q{flex:1;font-size:14px;font-weight:500;line-height:1.4;}
+    .bank-item-meta{font-size:11px;color:var(--text2);margin-top:4px;}
+    .bank-item-actions{display:flex;gap:6px;flex-shrink:0;}
+    .empty-state{text-align:center;padding:3rem;color:var(--text2);}
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Ball Knowledge</div>
+    <div class="login-sub">Admin Panel</div>
+    <input class="login-input" id="pw-input" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <div class="login-err" id="login-err"></div>
+    <button class="btn btn-accent" style="width:100%" onclick="doLogin()">Enter</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo">Ball <span>Knowledge</span> Admin</div>
+    <div class="topbar-nav">
+      <button class="tab-btn active" onclick="showTab('generate')" id="tab-generate">Generate</button>
+      <button class="tab-btn" onclick="showTab('review')" id="tab-review">Review <span id="review-badge"></span></button>
+      <button class="tab-btn" onclick="showTab('bank')" id="tab-bank">Question Bank</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- ── GENERATE TAB ── -->
+    <div id="tab-generate-content">
+      <div class="section-title">Generate Questions</div>
+      <div class="section-sub">Pick your settings and generate a batch for review.</div>
+
+      <div class="gen-settings">
+        <div class="field">
+          <label>League</label>
+          <select id="gen-league">
+            <option value="NFL">NFL</option>
+            <option value="NBA">NBA</option>
+            <option value="MLB">MLB</option>
+            <option value="NHL">NHL</option>
+            <option value="NCAA Football">NCAA Football</option>
+            <option value="NCAA Basketball">NCAA Basketball</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Mode</label>
+          <select id="gen-mode" onchange="updateGenMode()">
+            <option value="classic">Classic</option>
+            <option value="niche">Name the Niche</option>
+            <option value="gauntlet">The Gauntlet</option>
+          </select>
+        </div>
+        <div class="field" id="gen-decade-field">
+          <label>Decade</label>
+          <select id="gen-decade">
+            <option value="1970s">1970s</option>
+            <option value="1980s">1980s</option>
+            <option value="1990s">1990s</option>
+            <option value="2000s">2000s</option>
+            <option value="2010s">2010s</option>
+            <option value="2020s" selected>2020s</option>
+            <option value="All eras">All eras</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Difficulty</label>
+          <select id="gen-difficulty">
+            <option value="Easy">Easy</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Hard">Hard</option>
+            <option value="Extreme">Extreme</option>
+          </select>
+        </div>
+        <div class="field" id="gen-format-field">
+          <label>Format</label>
+          <select id="gen-format">
+            <option value="Multiple choice">Multiple choice</option>
+            <option value="Name the list">Name the list</option>
+            <option value="Mixed">Mixed</option>
+          </select>
+        </div>
+        <div class="field" id="gen-count-field">
+          <label>How many to generate</label>
+          <select id="gen-count">
+            <option value="5">5 questions</option>
+            <option value="10" selected>10 questions</option>
+            <option value="15">15 questions</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="gen-row">
+        <button class="btn btn-accent" id="gen-btn" onclick="generateBatch()">Generate Questions</button>
+        <div id="gen-status" style="font-size:13px;color:var(--text2);margin-left:12px;"></div>
+      </div>
+    </div>
+
+    <!-- ── REVIEW TAB ── -->
+    <div id="tab-review-content" style="display:none">
+      <div class="section-title">Review Queue</div>
+      <div class="section-sub">Approve or reject each question. Edit anything before approving.</div>
+      <div id="review-list"></div>
+    </div>
+
+    <!-- ── BANK TAB ── -->
+    <div id="tab-bank-content" style="display:none">
+      <div class="section-title">Question Bank</div>
+      <div class="section-sub">All approved questions. Click Edit to make changes.</div>
+      <div class="bank-filters">
+        <select id="bank-league" onchange="loadBank()" style="padding:7px 10px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;">
+          <option value="">All leagues</option>
+          <option value="NFL">NFL</option>
+          <option value="NBA">NBA</option>
+          <option value="MLB">MLB</option>
+          <option value="NHL">NHL</option>
+          <option value="NCAA Football">NCAA Football</option>
+          <option value="NCAA Basketball">NCAA Basketball</option>
+        </select>
+        <select id="bank-mode" onchange="loadBank()" style="padding:7px 10px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;">
+          <option value="">All modes</option>
+          <option value="classic">Classic</option>
+          <option value="niche">Name the Niche</option>
+          <option value="gauntlet">The Gauntlet</option>
+        </select>
+        <select id="bank-difficulty" onchange="loadBank()" style="padding:7px 10px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;">
+          <option value="">All difficulties</option>
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
+          <option value="Extreme">Extreme</option>
+        </select>
+      </div>
+      <div id="bank-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://dvdcwpqixtnlzdhkvgik.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2ZGN3cHFpeHRubHpkaGt2Z2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMjc3MDcsImV4cCI6MjA5MzkwMzcwN30.6i5iIBZqWlxlcx4wgRDRQhZfQxRG0lYjqc7dtquRxxY';
+const ADMIN_PASSWORD = 'ballknowledge2024';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let pendingQuestions = []; // questions awaiting review (stored in question_bank with status='pending')
+let editingId = null;
+
+// ── LOGIN ──
+function doLogin() {
+  const pw = document.getElementById('pw-input').value;
+  if (pw === ADMIN_PASSWORD) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('app').style.flexDirection = 'column';
+    loadReviewQueue();
+  } else {
+    document.getElementById('login-err').textContent = 'Incorrect password.';
+  }
+}
+
+// ── TABS ──
+function showTab(tab) {
+  ['generate','review','bank'].forEach(t => {
+    document.getElementById('tab-'+t+'-content').style.display = t===tab ? '' : 'none';
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+  });
+  if (tab === 'review') loadReviewQueue();
+  if (tab === 'bank') loadBank();
+}
+
+function updateGenMode() {
+  const mode = document.getElementById('gen-mode').value;
+  document.getElementById('gen-decade-field').style.display = mode==='niche' ? 'none' : '';
+  document.getElementById('gen-format-field').style.display = mode==='classic' ? '' : 'none';
+  document.getElementById('gen-count-field').style.display = mode==='gauntlet' ? 'none' : '';
+}
+
+// ── GENERATE ──
+async function generateBatch() {
+  const btn = document.getElementById('gen-btn');
+  const status = document.getElementById('gen-status');
+  btn.disabled = true;
+  status.innerHTML = '<span class="spinner"></span> Generating…';
+
+  const mode = document.getElementById('gen-mode').value;
+  const league = document.getElementById('gen-league').value;
+  const decade = mode==='niche' ? 'All eras' : document.getElementById('gen-decade').value;
+  const difficulty = document.getElementById('gen-difficulty').value;
+  const format = mode==='classic' ? document.getElementById('gen-format').value : 'Multiple choice';
+  const qcount = mode==='gauntlet' ? 12 : parseInt(document.getElementById('gen-count').value);
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings: { mode, league, decade, difficulty, format, qcount }, roomId: 'admin-review' })
+    });
+    const data = await res.json();
+    if (!data.questions) throw new Error(data.error || 'No questions returned');
+
+    // Save each question to question_bank with status='pending'
+    const rows = data.questions.map(q => ({
+      mode, league, decade, difficulty,
+      type: q.type || 'mc',
+      category: q.category || '',
+      question: q.question,
+      data: q,
+      status: 'pending'
+    }));
+
+    const { error } = await sb.from('question_bank').insert(rows);
+    if (error) throw new Error(error.message);
+
+    status.textContent = `✓ ${rows.length} questions added to review queue.`;
+    showTab('review');
+  } catch(e) {
+    status.textContent = '✗ Error: ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+// ── REVIEW QUEUE ──
+async function loadReviewQueue() {
+  const { data, error } = await sb.from('question_bank').select('*').eq('status','pending').order('created_at', { ascending: true });
+  pendingQuestions = data || [];
+  document.getElementById('review-badge').textContent = pendingQuestions.length > 0 ? ` (${pendingQuestions.length})` : '';
+  renderReviewList();
+}
+
+function renderReviewList() {
+  const el = document.getElementById('review-list');
+  if (!pendingQuestions.length) {
+    el.innerHTML = '<div class="empty-state">Queue is empty — generate some questions to get started.</div>';
+    return;
+  }
+  el.innerHTML = pendingQuestions.map((row, i) => renderReviewCard(row, i)).join('');
+}
+
+function renderReviewCard(row, i) {
+  const q = row.data;
+  const isEditing = editingId === row.id;
+
+  const metaHTML = `
+    <div class="review-meta">
+      <span class="badge badge-known">${row.league}</span>
+      <span class="badge badge-iconic">${row.decade || 'All eras'}</span>
+      <span class="badge badge-niche">${row.difficulty}</span>
+      <span class="badge badge-deepcut">${row.mode}</span>
+      <span class="badge" style="background:var(--bg3);color:var(--text2)">${q.type === 'mc' ? 'Multiple choice' : 'List'}</span>
+    </div>`;
+
+  if (!isEditing) {
+    // Read-only preview
+    let contentHTML = '';
+    if (q.type === 'mc') {
+      contentHTML = `<div class="review-q">${q.question}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:.5rem;">
+          ${q.options.map((o,oi) => `<div style="padding:8px 10px;border-radius:var(--rsm);border:1px solid ${oi===q.correct?'var(--green-bd)':'var(--border)'};background:${oi===q.correct?'var(--green-bg)':'var(--bg3)'};font-size:13px;color:${oi===q.correct?'var(--green)':'var(--text2)'};">${o}</div>`).join('')}
+        </div>
+        <div style="font-size:12px;color:var(--text2);border-left:3px solid var(--accent);padding:8px 10px;background:var(--bg3);border-radius:0;">📖 ${q.fact}</div>`;
+    } else {
+      contentHTML = `<div class="review-q">${q.question}</div>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:.5rem;">
+          ${(q.items||[]).map((item,ii) => {
+            const tier = q.tiers?.[ii] || 'known';
+            return `<div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+              <span class="badge badge-${tier}">${tier}</span>
+              <span style="flex:1">${item}</span>
+              <span style="color:var(--text3);font-size:11px">${q.stats?.[ii]||''}</span>
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="font-size:12px;color:var(--text2);border-left:3px solid var(--accent);padding:8px 10px;background:var(--bg3);border-radius:0;">📖 ${q.fact}</div>`;
+    }
+
+    return `<div class="review-card" id="rcard-${row.id}">
+      ${metaHTML}
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px;">${q.category}</div>
+      ${contentHTML}
+      <div class="review-actions">
+        <button class="btn btn-green" onclick="approveQuestion('${row.id}')">✓ Approve</button>
+        <button class="btn btn-ghost" onclick="startEdit('${row.id}')">✏️ Edit</button>
+        <button class="btn btn-red" onclick="rejectQuestion('${row.id}')">✗ Reject</button>
+      </div>
+    </div>`;
+  } else {
+    // Edit mode
+    return renderEditCard(row);
+  }
+}
+
+function renderEditCard(row) {
+  const q = { ...row.data };
+  const isMC = q.type === 'mc';
+
+  let editorHTML = '';
+  if (isMC) {
+    editorHTML = `
+      <div class="field"><label>Question</label><textarea id="edit-question">${q.question}</textarea></div>
+      <div class="field"><label>Category</label><input type="text" id="edit-category" value="${q.category||''}"/></div>
+      <div class="field"><label>Options (select correct answer)</label>
+        ${q.options.map((o,i) => `
+          <div class="mc-option">
+            <input type="radio" name="correct-${row.id}" value="${i}" ${q.correct===i?'checked':''} onchange="updateCorrect(${i})"/>
+            <input type="text" id="edit-opt-${i}" value="${o}"/>
+            ${q.correct===i?'<span class="correct-label">✓ Correct</span>':''}
+          </div>`).join('')}
+      </div>
+      <div class="field"><label>Fact</label><textarea id="edit-fact">${q.fact||''}</textarea></div>`;
+  } else {
+    editorHTML = `
+      <div class="field"><label>Question</label><textarea id="edit-question">${q.question}</textarea></div>
+      <div class="field"><label>Category</label><input type="text" id="edit-category" value="${q.category||''}"/></div>
+      <div class="field">
+        <label>Answers</label>
+        <div class="col-headers">
+          <span class="col-header nm">Name</span>
+          <span class="col-header st">Stat/context</span>
+          <span class="col-header ti">Tier</span>
+          <span class="col-header al">Aliases (comma separated)</span>
+          <span style="width:60px"></span>
+        </div>
+        <div id="edit-items-list">
+          ${(q.items||[]).map((item,ii) => `
+            <div class="list-item-row" id="edit-item-${ii}">
+              <input type="text" class="item-name" id="ei-name-${ii}" value="${item}"/>
+              <input type="text" class="item-stat" id="ei-stat-${ii}" value="${q.stats?.[ii]||''}"/>
+              <select class="item-tier" id="ei-tier-${ii}">
+                ${['iconic','known','niche','deepcut'].map(t=>`<option value="${t}" ${(q.tiers?.[ii]||'known')===t?'selected':''}>${t}</option>`).join('')}
+              </select>
+              <input type="text" class="item-aliases" id="ei-aliases-${ii}" value="${(q.aliases?.[ii]||[]).join(', ')}"/>
+              <button class="del-btn" onclick="deleteItem(${ii})">Remove</button>
+            </div>`).join('')}
+        </div>
+        <div class="add-item-row">
+          <input type="text" id="new-item-name" placeholder="New answer name" style="flex:2"/>
+          <input type="text" id="new-item-stat" placeholder="Stat/context" style="flex:1"/>
+          <select id="new-item-tier" style="width:110px">
+            ${['iconic','known','niche','deepcut'].map(t=>`<option value="${t}">${t}</option>`).join('')}
+          </select>
+          <input type="text" id="new-item-aliases" placeholder="aliases, comma separated" style="flex:2"/>
+          <button class="btn btn-ghost" onclick="addItem('${row.id}')" style="padding:8px 12px">+ Add</button>
+        </div>
+      </div>
+      <div class="field"><label>Fact</label><textarea id="edit-fact">${q.fact||''}</textarea></div>`;
+  }
+
+  return `<div class="review-card" id="rcard-${row.id}" style="border-color:var(--accent)">
+    <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:1rem;">✏️ Editing question</div>
+    ${editorHTML}
+    <div class="review-actions">
+      <button class="btn btn-green" onclick="saveAndApprove('${row.id}')">✓ Save & Approve</button>
+      <button class="btn btn-ghost" onclick="cancelEdit('${row.id}')">Cancel</button>
+      <button class="btn btn-red" onclick="rejectQuestion('${row.id}')">✗ Reject</button>
+    </div>
+  </div>`;
+}
+
+function startEdit(id) {
+  editingId = id;
+  renderReviewList();
+}
+
+function cancelEdit(id) {
+  editingId = null;
+  renderReviewList();
+}
+
+let tempCorrect = null;
+function updateCorrect(i) { tempCorrect = i; }
+
+function deleteItem(idx) {
+  const row = pendingQuestions.find(r => r.id === editingId);
+  if (!row) return;
+  const q = { ...row.data };
+  q.items.splice(idx, 1);
+  if (q.tiers) q.tiers.splice(idx, 1);
+  if (q.stats) q.stats.splice(idx, 1);
+  if (q.labels) q.labels.splice(idx, 1);
+  if (q.aliases) q.aliases.splice(idx, 1);
+  row.data = q;
+  renderReviewList();
+}
+
+function addItem(id) {
+  const row = pendingQuestions.find(r => r.id === id);
+  if (!row) return;
+  const name = document.getElementById('new-item-name').value.trim();
+  if (!name) return;
+  const stat = document.getElementById('new-item-stat').value.trim();
+  const tier = document.getElementById('new-item-tier').value;
+  const aliasRaw = document.getElementById('new-item-aliases').value;
+  const aliases = aliasRaw.split(',').map(a=>a.trim().toLowerCase()).filter(Boolean);
+  if (!aliases.includes(name.toLowerCase())) aliases.unshift(name.toLowerCase());
+  const lastName = name.toLowerCase().split(' ').pop();
+  if (!aliases.includes(lastName)) aliases.push(lastName);
+
+  const q = row.data;
+  q.items = [...(q.items||[]), name];
+  q.tiers = [...(q.tiers||[]), tier];
+  q.stats = [...(q.stats||[]), stat];
+  q.labels = [...(q.labels||[]), name];
+  q.aliases = [...(q.aliases||[]), aliases];
+  row.data = q;
+  renderReviewList();
+}
+
+function collectEdits(id) {
+  const row = pendingQuestions.find(r => r.id === id);
+  if (!row) return null;
+  const q = { ...row.data };
+  q.question = document.getElementById('edit-question').value.trim();
+  q.category = document.getElementById('edit-category').value.trim();
+  q.fact = document.getElementById('edit-fact').value.trim();
+  if (q.type === 'mc') {
+    q.options = [0,1,2,3].map(i => document.getElementById('edit-opt-'+i)?.value.trim() || q.options[i]);
+    if (tempCorrect !== null) q.correct = tempCorrect;
+  } else {
+    const count = (q.items||[]).length;
+    for(let i=0;i<count;i++) {
+      if (document.getElementById('ei-name-'+i)) {
+        q.items[i] = document.getElementById('ei-name-'+i).value.trim();
+        q.stats[i] = document.getElementById('ei-stat-'+i)?.value.trim() || '';
+        q.tiers[i] = document.getElementById('ei-tier-'+i)?.value || 'known';
+        const raw = document.getElementById('ei-aliases-'+i)?.value || '';
+        q.aliases[i] = raw.split(',').map(a=>a.trim().toLowerCase()).filter(Boolean);
+      }
+    }
+  }
+  return q;
+}
+
+async function saveAndApprove(id) {
+  const q = collectEdits(id);
+  if (!q) return;
+  const row = pendingQuestions.find(r => r.id === id);
+  const { error } = await sb.from('question_bank').update({
+    question: q.question, category: q.category, type: q.type,
+    data: q, status: 'approved', approved_at: new Date().toISOString()
+  }).eq('id', id);
+  if (error) { showToast('Error saving'); return; }
+  pendingQuestions = pendingQuestions.filter(r => r.id !== id);
+  editingId = null;
+  showToast('✓ Approved and saved to bank');
+  renderReviewList();
+  updateReviewBadge();
+}
+
+async function approveQuestion(id) {
+  const { error } = await sb.from('question_bank').update({ status:'approved', approved_at: new Date().toISOString() }).eq('id', id);
+  if (error) { showToast('Error approving'); return; }
+  pendingQuestions = pendingQuestions.filter(r => r.id !== id);
+  showToast('✓ Approved');
+  renderReviewList();
+  updateReviewBadge();
+}
+
+async function rejectQuestion(id) {
+  const { error } = await sb.from('question_bank').update({ status:'rejected' }).eq('id', id);
+  if (error) { showToast('Error rejecting'); return; }
+  pendingQuestions = pendingQuestions.filter(r => r.id !== id);
+  editingId = null;
+  showToast('✗ Rejected');
+  renderReviewList();
+  updateReviewBadge();
+}
+
+function updateReviewBadge() {
+  document.getElementById('review-badge').textContent = pendingQuestions.length > 0 ? ` (${pendingQuestions.length})` : '';
+}
+
+// ── QUESTION BANK ──
+async function loadBank() {
+  const league = document.getElementById('bank-league').value;
+  const mode = document.getElementById('bank-mode').value;
+  const diff = document.getElementById('bank-difficulty').value;
+  let query = sb.from('question_bank').select('*').eq('status','approved').order('approved_at', { ascending: false });
+  if (league) query = query.eq('league', league);
+  if (mode) query = query.eq('mode', mode);
+  if (diff) query = query.eq('difficulty', diff);
+  const { data } = await query;
+  renderBank(data || []);
+}
+
+function renderBank(rows) {
+  const el = document.getElementById('bank-list');
+  if (!rows.length) { el.innerHTML = '<div class="empty-state">No approved questions yet.</div>'; return; }
+  el.innerHTML = rows.map(row => `
+    <div class="bank-item">
+      <div style="flex:1">
+        <div class="bank-item-q">${row.question}</div>
+        <div class="bank-item-meta">
+          <span class="badge badge-known">${row.league}</span>
+          <span class="badge badge-iconic" style="margin-left:4px">${row.decade||'All eras'}</span>
+          <span class="badge badge-niche" style="margin-left:4px">${row.difficulty}</span>
+          <span class="badge badge-deepcut" style="margin-left:4px">${row.mode}</span>
+          <span style="margin-left:8px;font-size:11px;color:var(--text3)">${row.type==='mc'?'Multiple choice':'List'}</span>
+        </div>
+      </div>
+      <div class="bank-item-actions">
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="editBankItem('${row.id}')">Edit</button>
+        <button class="btn btn-red" style="font-size:12px;padding:6px 12px" onclick="deleteBankItem('${row.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+async function deleteBankItem(id) {
+  if (!confirm('Delete this question from the bank?')) return;
+  await sb.from('question_bank').delete().eq('id', id);
+  showToast('Deleted');
+  loadBank();
+}
+
+async function editBankItem(id) {
+  const { data } = await sb.from('question_bank').select('*').eq('id', id).single();
+  if (!data) return;
+  // Add to pending list temporarily for editing
+  if (!pendingQuestions.find(r=>r.id===id)) pendingQuestions.unshift(data);
+  editingId = id;
+  showTab('review');
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+</script>
+</body>
+</html>

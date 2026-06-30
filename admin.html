@@ -75,6 +75,14 @@
     .review-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
     .review-q{font-size:17px;font-weight:600;margin-bottom:1rem;line-height:1.45;}
     .review-actions{display:flex;gap:8px;margin-top:1.25rem;flex-wrap:wrap;}
+    .verify-box{margin-top:10px;padding:12px 14px;border-radius:var(--rsm);font-size:13px;line-height:1.55;}
+    .verify-box.correct{background:var(--green-bg);border:1px solid var(--green-bd);color:var(--green);}
+    .verify-box.incorrect{background:var(--red-bg);border:1px solid var(--red-bd);color:var(--red);}
+    .verify-box.uncertain{background:#FAEEDA;border:1px solid #D4A65A;color:#8A5A1E;}
+    .verify-box.loading{background:var(--bg3);border:1px solid var(--border);color:var(--text2);}
+    .verify-box ul{margin:6px 0 0;padding-left:1.2em;}
+    .verify-box li{margin-bottom:2px;}
+    .verify-label{font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.05em;margin-bottom:4px;display:block;}
 
     /* MC options editor */
     .mc-option{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
@@ -384,7 +392,9 @@ function renderReviewCard(row, i) {
       ${metaHTML}
       <div style="font-size:11px;color:var(--text3);margin-bottom:8px;">${q.category}</div>
       ${contentHTML}
+      <div id="verify-result-${row.id}"></div>
       <div class="review-actions">
+        <button class="btn btn-blue" id="verify-btn-${row.id}" onclick="verifyQuestion('${row.id}')">🔍 Verify with web search</button>
         <button class="btn btn-green" onclick="approveQuestion('${row.id}')">✓ Approve</button>
         <button class="btn btn-ghost" onclick="startEdit('${row.id}')">✏️ Edit</button>
         <button class="btn btn-red" onclick="rejectQuestion('${row.id}')">✗ Reject</button>
@@ -551,6 +561,46 @@ async function saveAndApprove(id) {
   showToast('✓ Approved and saved to bank');
   renderReviewList();
   updateReviewBadge();
+}
+
+// ── FACT CHECK / VERIFY ──
+async function verifyQuestion(id) {
+  const row = pendingQuestions.find(r => r.id === id);
+  if (!row) return;
+  const btn = document.getElementById('verify-btn-'+id);
+  const resultEl = document.getElementById('verify-result-'+id);
+  if (btn) { btn.disabled = true; btn.textContent = '🔍 Searching the web…'; }
+  if (resultEl) resultEl.innerHTML = `<div class="verify-box loading"><span class="spinner" style="width:14px;height:14px;border-width:2px;vertical-align:middle;margin-right:6px;"></span>Checking facts against live web search…</div>`;
+
+  try {
+    const res = await fetch('/api/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: row.data })
+    });
+    const result = await res.json();
+    if (result.error) throw new Error(result.error);
+
+    let html = `<div class="verify-box ${result.verdict}">
+      <span class="verify-label">${result.verdict === 'correct' ? '✓ Looks accurate' : result.verdict === 'incorrect' ? '✗ Issue found' : '⚠ Uncertain'}</span>
+      ${result.explanation || ''}`;
+
+    if (result.missingAnswers && result.missingAnswers.length) {
+      html += `<br/><strong>Possibly missing:</strong><ul>${result.missingAnswers.map(a=>`<li>${a}</li>`).join('')}</ul>`;
+    }
+    if (result.incorrectAnswers && result.incorrectAnswers.length) {
+      html += `<br/><strong>Possibly shouldn't be included:</strong><ul>${result.incorrectAnswers.map(a=>`<li>${a}</li>`).join('')}</ul>`;
+    }
+    if (result.suggestedCorrection) {
+      html += `<br/><strong>Suggested correction:</strong> ${result.suggestedCorrection}`;
+    }
+    html += `</div>`;
+    if (resultEl) resultEl.innerHTML = html;
+  } catch(e) {
+    if (resultEl) resultEl.innerHTML = `<div class="verify-box incorrect">Verification failed: ${e.message}</div>`;
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '🔍 Verify with web search'; }
 }
 
 async function approveQuestion(id) {

@@ -41,33 +41,44 @@ Format:
 Generate all 12 questions now:`;
   }
 
-  // ── NAME THE NICHE: list-style, large answer pools with explicit obscurity tiers ──
+  // ── NAME THE NICHE: list-style, EXHAUSTIVE bounded answer sets only ──
   else if (mode === 'niche') {
     prompt = `You are a hardcore sports trivia question generator. Generate exactly 3 "Name the Niche" trivia questions with these settings:
 - League: ${league}
 - Difficulty: ${difficulty}
 
-Each question asks players to name as many valid answers as possible from a large pool within 2 minutes.
-Questions should have 10-15 valid answers.
+CRITICAL RULE — THE ANSWER SET MUST BE COMPLETE AND EXHAUSTIVE, NOT A SAMPLE:
+Every question must have a category where you can list EVERY SINGLE valid answer that exists — not a representative sample, not "some examples," but literally all of them. The player should never be able to name something correct that ISN'T in your "items" list.
+
+This means you must REJECT any open-ended category like:
+- "Name running backs who rushed for 1000+ yards since 2015" — BAD, this has 40+ possible answers and you can't list them all
+- "Name quarterbacks who started a playoff game" — BAD, too many to enumerate
+- "Name players who made the Pro Bowl" — BAD, hundreds of valid answers
+
+Instead, use categories that are NATURALLY BOUNDED to a small, fixed, fully-listable set, such as:
+- "Name every team to win the Super Bowl in the 2010s" (exactly 10 possible answers, one per year)
+- "Name every #1 overall NFL Draft pick from 2015-2024" (exactly 10 answers, one per year)
+- "Name every quarterback who started a Super Bowl since 2015" (a small fixed list — verify the real count)
+- "Name every player who won NFL MVP since 2000" (one per year, fully listable)
+- "Name every team that has appeared in the last 5 Super Bowls" (small fixed list)
+- "Name all 32 NFL teams" / "Name all current AFC East starting QBs" (rosters are small and fixed)
+
+The pattern: tie the category to a fixed time window or a fixed structural count (one per year, one per round, one per division, one per franchise) so the full answer set is small (8-20 items) and 100% enumerable. If you cannot confidently list every single valid answer, do not use that category — pick a different one that you can fully enumerate.
+
+Before finalizing each question, mentally verify: "Have I listed every single correct answer, with zero omissions and zero extras?" If you have any doubt, narrow the category further (e.g. add a specific date range or condition) until the set is small enough to be 100% complete.
 
 CRITICAL — TIER RATING RULES:
-For every answer, assign a "tier" based on genuine real-world recognizability. This must be honest and accurate. Do NOT rate everything "known" — you must include all 4 tiers.
+For every answer, assign a "tier" based on genuine real-world recognizability. Do NOT rate everything "known" — include all 4 tiers.
 
 Tier definitions with concrete NFL examples:
-- "iconic"   = a casual fan who barely watches knows this instantly. Examples: Tom Brady, LeBron James, Michael Jordan, Patrick Mahomes, Peyton Manning, Kobe Bryant, Super Bowl champions most people know.
-- "known"    = a regular fan who follows the league would get this. Examples: Derrick Henry, Justin Jefferson, Nick Bosa, Josh Allen. You watch the sport, you know these names.
-- "niche"    = only fans who watch closely, follow stats, or know the era well would recall. Examples: Tyler Lockett, Amon-Ra St. Brown, Dameon Pierce, a backup starter who had one good season.
-- "deepcut"  = true experts and stat-heads only. Examples: a 3rd-string QB who started 4 games, a lineman who made one Pro Bowl, someone who led the league in a minor stat category one year.
+- "iconic"   = a casual fan who barely watches knows this instantly. Examples: Tom Brady, Patrick Mahomes, Peyton Manning.
+- "known"    = a regular fan who follows the league would get this. Examples: Derrick Henry, Justin Jefferson, Nick Bosa.
+- "niche"    = only fans who watch closely or know the era well would recall. Examples: Tyler Lockett, Amon-Ra St. Brown.
+- "deepcut"  = true experts/stat-heads only. Examples: a backup QB who started a handful of games, a one-time Pro Bowler.
 
-REQUIRED DISTRIBUTION: Every question MUST have roughly:
-- 2-3 "iconic" answers
-- 3-4 "known" answers  
-- 3-4 "niche" answers
-- 2-3 "deepcut" answers
+REQUIRED DISTRIBUTION per question: roughly 2-3 "iconic", 3-4 "known", 3-4 "niche", 2-3 "deepcut". Do NOT make everything the same tier.
 
-Do NOT assign "known" to everyone. Do NOT make all answers the same tier. A player like Dak Prescott is "iconic." A player like Brandin Cooks is "niche." A player like Dontrell Hilliard is "deepcut."
-
-Every fact must be 100% accurate. Do not invent players or stats.
+Every fact must be 100% accurate. Do not invent players, teams, or stats. Double check names, years, and team affiliations against real history before including them.
 
 Return ONLY a valid JSON array. No markdown, no explanation.
 

@@ -67,6 +67,14 @@ The pattern: tie the category to a fixed time window or a fixed structural count
 
 Before finalizing each question, mentally verify: "Have I listed every single correct answer, with zero omissions and zero extras?" If you have any doubt, narrow the category further (e.g. add a specific date range or condition) until the set is small enough to be 100% complete.
 
+STRONG PREFERENCE — STAT-BASED CATEGORIES:
+Prioritize categories built around statistics, not just awards or draft picks. Aim for a mix across these three stat angles:
+1. SEASON LEADERS — e.g. "Name every NFL rushing yards leader from 2014-2023" (one per season, fully listable), "Name every player who led the NFL in passing touchdowns since 2015," "Name every NBA scoring champion since 2010"
+2. CAREER MILESTONES / RECORDS — e.g. "Name every NFL running back with a 2,000-yard rushing season" (small fixed historical list), "Name every QB with 5+ Super Bowl rings," "Name every player with 500+ career home runs" — pick milestones rare enough that the list is small and fully verifiable
+3. SINGLE-GAME PERFORMANCES — e.g. "Name every player who has rushed for 250+ yards in a single NFL game" (a specific, countable historical list), "Name every QB who has thrown 6+ TD passes in a single game since 2015" — choose a threshold extreme enough that the full list is short and confirmable
+
+For at least 2 of the ${qcount} questions you generate, use a stat-based category from one of these three angles (mix it up — don't repeat the same angle every time). Always pick a specific numeric threshold or exact year range that keeps the answer set small, bounded, and 100% verifiable — never a vague or sprawling stat category.
+
 CRITICAL — TIER RATING RULES:
 For every answer, assign a "tier" based on genuine real-world recognizability. Do NOT rate everything "known" — include all 4 tiers.
 

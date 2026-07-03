@@ -166,11 +166,12 @@ Generate ${qcount} questions now:`;
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'x-api-key':apiKey, 'anthropic-version':'2023-06-01' },
-      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:8000, messages:[{ role:'user', content:prompt }] })
+      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:16000, messages:[{ role:'user', content:prompt }] })
     });
     const raw = await response.json();
     console.log('Claude status:', response.status);
-    if (!response.ok) return res.status(500).json({ error:'Claude API error', details:raw });
+    console.log('Claude error:', JSON.stringify(raw).slice(0, 500));
+    if (!response.ok) return res.status(500).json({ error: raw?.error?.message || 'Claude API error', details: raw });
     if (!raw.content?.[0]?.text) return res.status(500).json({ error:'Empty response from Claude' });
     let text = raw.content[0].text.trim().replace(/^```json\n?/,'').replace(/\n?```$/,'').trim();
     const questions = JSON.parse(text);

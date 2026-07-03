@@ -204,9 +204,139 @@
         </div>
       </div>
 
-      <div class="gen-row">
-        <button class="btn btn-accent" id="gen-btn" onclick="generateBatch()">Generate Questions</button>
-        <div id="gen-status" style="font-size:13px;color:var(--text2);margin-left:12px;"></div>
+    <!-- ── GENERATE TAB ── -->
+    <div id="tab-generate-content">
+      <div class="section-title">Add Questions</div>
+      <div class="section-sub">Paste in questions generated from Claude chat — free, no API credits used.</div>
+
+      <!-- ── PASTE SECTION (primary) ── -->
+      <div class="card" style="border-color:var(--accent);">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">📋 Paste Questions</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:1rem;">Generate questions in the Claude chat window (free), then paste the JSON here. Set the metadata below so questions are tagged correctly.</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem;">
+          <div class="field" style="margin:0">
+            <label>League</label>
+            <select id="paste-league">
+              <option value="NFL">NFL</option>
+              <option value="NBA">NBA</option>
+              <option value="MLB">MLB</option>
+              <option value="NHL">NHL</option>
+              <option value="NCAA Football">NCAA Football</option>
+              <option value="NCAA Basketball">NCAA Basketball</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0">
+            <label>Mode</label>
+            <select id="paste-mode" onchange="updatePasteMode()">
+              <option value="classic">Classic</option>
+              <option value="niche">Name the Niche</option>
+              <option value="gauntlet">The Gauntlet</option>
+            </select>
+          </div>
+          <div class="field" id="paste-decade-field" style="margin:0">
+            <label>Decade</label>
+            <select id="paste-decade">
+              <option value="1970s">1970s</option>
+              <option value="1980s">1980s</option>
+              <option value="1990s">1990s</option>
+              <option value="2000s">2000s</option>
+              <option value="2010s">2010s</option>
+              <option value="2020s" selected>2020s</option>
+              <option value="All eras">All eras</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0">
+            <label>Difficulty</label>
+            <select id="paste-difficulty">
+              <option value="Easy">Easy</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="Hard">Hard</option>
+              <option value="Extreme">Extreme</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Paste JSON here</label>
+          <textarea id="paste-json" style="min-height:140px;font-family:monospace;font-size:12px;" placeholder='Paste a JSON array of questions here, e.g. [{"type":"mc","question":"...","options":[...],"correct":0,"fact":"...","category":"..."}, ...]'></textarea>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn btn-accent" onclick="pasteQuestions()">Add to Review Queue →</button>
+          <div id="paste-status" style="font-size:13px;color:var(--text2);"></div>
+        </div>
+      </div>
+
+      <!-- ── AI GENERATE SECTION (secondary, hidden by default) ── -->
+      <div style="margin-top:1rem;">
+        <button class="btn btn-ghost" style="font-size:13px;width:auto;padding:8px 16px;" onclick="toggleGenPanel()">⚙️ Use AI generation instead (costs API credits)</button>
+      </div>
+      <div id="gen-panel" style="display:none;margin-top:1rem;">
+        <div class="card" style="border-color:var(--border);">
+          <div style="font-size:13px;color:var(--red);margin-bottom:1rem;font-weight:500;">⚠️ This uses API credits. Use the paste method above when possible.</div>
+          <div class="gen-settings">
+            <div class="field">
+              <label>League</label>
+              <select id="gen-league">
+                <option value="NFL">NFL</option>
+                <option value="NBA">NBA</option>
+                <option value="MLB">MLB</option>
+                <option value="NHL">NHL</option>
+                <option value="NCAA Football">NCAA Football</option>
+                <option value="NCAA Basketball">NCAA Basketball</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Mode</label>
+              <select id="gen-mode" onchange="updateGenMode()">
+                <option value="classic">Classic</option>
+                <option value="niche">Name the Niche</option>
+                <option value="gauntlet">The Gauntlet</option>
+              </select>
+            </div>
+            <div class="field" id="gen-decade-field">
+              <label>Decade</label>
+              <select id="gen-decade">
+                <option value="1970s">1970s</option>
+                <option value="1980s">1980s</option>
+                <option value="1990s">1990s</option>
+                <option value="2000s">2000s</option>
+                <option value="2010s">2010s</option>
+                <option value="2020s" selected>2020s</option>
+                <option value="All eras">All eras</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Difficulty</label>
+              <select id="gen-difficulty">
+                <option value="Easy">Easy</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="Hard">Hard</option>
+                <option value="Extreme">Extreme</option>
+              </select>
+            </div>
+            <div class="field" id="gen-format-field">
+              <label>Format</label>
+              <select id="gen-format">
+                <option value="Multiple choice">Multiple choice</option>
+                <option value="Name the list">Name the list</option>
+                <option value="Mixed">Mixed</option>
+              </select>
+            </div>
+            <div class="field" id="gen-count-field">
+              <label>How many to generate</label>
+              <select id="gen-count">
+                <option value="5">5 questions</option>
+                <option value="10" selected>10 questions</option>
+                <option value="15">15 questions</option>
+              </select>
+            </div>
+          </div>
+          <div class="gen-row">
+            <button class="btn btn-accent" id="gen-btn" onclick="generateBatch()">Generate Questions</button>
+            <div id="gen-status" style="font-size:13px;color:var(--text2);margin-left:12px;"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -290,7 +420,59 @@ function updateGenMode() {
   document.getElementById('gen-count-field').style.display = mode==='gauntlet' ? 'none' : '';
 }
 
-// ── GENERATE ──
+// ── PASTE QUESTIONS ──
+function updatePasteMode() {
+  const mode = document.getElementById('paste-mode').value;
+  document.getElementById('paste-decade-field').style.display = mode === 'niche' ? 'none' : '';
+}
+
+function toggleGenPanel() {
+  const el = document.getElementById('gen-panel');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+async function pasteQuestions() {
+  const raw = document.getElementById('paste-json').value.trim();
+  const status = document.getElementById('paste-status');
+  if (!raw) { status.textContent = 'Nothing to paste.'; return; }
+
+  let questions;
+  try {
+    // Strip markdown fences if someone copied from chat
+    const clean = raw.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+    questions = JSON.parse(clean);
+    if (!Array.isArray(questions)) throw new Error('Must be a JSON array');
+  } catch(e) {
+    status.textContent = '✗ Invalid JSON: ' + e.message;
+    return;
+  }
+
+  const mode = document.getElementById('paste-mode').value;
+  const league = document.getElementById('paste-league').value;
+  const decade = mode === 'niche' ? 'All eras' : document.getElementById('paste-decade').value;
+  const difficulty = document.getElementById('paste-difficulty').value;
+
+  const rows = questions.map(q => ({
+    mode, league, decade, difficulty,
+    type: q.type || 'mc',
+    category: q.category || '',
+    question: q.question,
+    data: q,
+    status: 'pending'
+  }));
+
+  try {
+    const { error } = await sb.from('question_bank').insert(rows);
+    if (error) throw new Error(error.message);
+    status.textContent = `✓ ${rows.length} question${rows.length===1?'':'s'} added to review queue.`;
+    document.getElementById('paste-json').value = '';
+    showTab('review');
+  } catch(e) {
+    status.textContent = '✗ Error saving: ' + e.message;
+  }
+}
+
+// ── AI GENERATE (kept as fallback) ──
 async function generateBatch() {
   const btn = document.getElementById('gen-btn');
   const status = document.getElementById('gen-status');

@@ -311,7 +311,7 @@ async function generateBatch() {
       body: JSON.stringify({ settings: { mode, league, decade, difficulty, format, qcount }, roomId: 'admin-review' })
     });
     const data = await res.json();
-    if (!data.questions) throw new Error(data.error || 'No questions returned');
+    if (!data.questions) throw new Error(data.error || JSON.stringify(data) || 'No questions returned');
 
     // Save each question to question_bank with status='pending'
     const rows = data.questions.map(q => ({

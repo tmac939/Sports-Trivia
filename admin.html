@@ -518,8 +518,16 @@ async function generateBatch() {
 
 // ── REVIEW QUEUE ──
 async function loadReviewQueue() {
+  const el = document.getElementById('review-list');
+  if (el) el.innerHTML = '<div class="empty-state">Loading…</div>';
   const { data, error } = await sb.from('question_bank').select('*').eq('status','pending').order('created_at', { ascending: true });
+  if (error) {
+    console.error('loadReviewQueue error:', error);
+    if (el) el.innerHTML = `<div class="empty-state" style="color:var(--red)">Error loading queue: ${error.message}</div>`;
+    return;
+  }
   pendingQuestions = data || [];
+  console.log('Pending questions loaded:', pendingQuestions.length);
   document.getElementById('review-badge').textContent = pendingQuestions.length > 0 ? ` (${pendingQuestions.length})` : '';
   renderReviewList();
 }
@@ -857,6 +865,8 @@ function updateReviewBadge() {
 
 // ── QUESTION BANK ──
 async function loadBank() {
+  const el = document.getElementById('bank-list');
+  if (el) el.innerHTML = '<div class="empty-state">Loading…</div>';
   const league = document.getElementById('bank-league').value;
   const mode = document.getElementById('bank-mode').value;
   const diff = document.getElementById('bank-difficulty').value;
@@ -864,7 +874,13 @@ async function loadBank() {
   if (league) query = query.eq('league', league);
   if (mode) query = query.eq('mode', mode);
   if (diff) query = query.eq('difficulty', diff);
-  const { data } = await query;
+  const { data, error } = await query;
+  if (error) {
+    console.error('loadBank error:', error);
+    if (el) el.innerHTML = `<div class="empty-state" style="color:var(--red)">Error loading bank: ${error.message}</div>`;
+    return;
+  }
+  console.log('Bank questions loaded:', (data||[]).length);
   renderBank(data || []);
 }
 

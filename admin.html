@@ -538,11 +538,16 @@ function renderReviewList() {
     el.innerHTML = '<div class="empty-state">Queue is empty — generate some questions to get started.</div>';
     return;
   }
-  el.innerHTML = pendingQuestions.map((row, i) => renderReviewCard(row, i)).join('');
+  el.innerHTML = pendingQuestions.map((row, i) => {
+    try { return renderReviewCard(row, i); }
+    catch(e) { return `<div class="review-card" style="border-color:var(--red)"><strong style="color:var(--red)">Error rendering question ${row.id}:</strong> ${e.message}</div>`; }
+  }).join('');
 }
 
 function renderReviewCard(row, i) {
-  const q = row.data;
+  // Supabase sometimes returns jsonb as a string — parse it if needed
+  const q = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+  if (!q) return `<div class="review-card">Error: missing data for question ${row.id}</div>`;
   const isEditing = editingId === row.id;
 
   const metaHTML = `
@@ -597,7 +602,7 @@ function renderReviewCard(row, i) {
 }
 
 function renderEditCard(row) {
-  const q = { ...row.data };
+  const q = { ...(typeof row.data === 'string' ? JSON.parse(row.data) : row.data) };
   const isMC = q.type === 'mc';
 
   let editorHTML = '';

@@ -829,7 +829,7 @@ function renderBank(rows) {
   const el = document.getElementById('bank-list');
   if (!rows.length) { el.innerHTML = '<div class="empty-state">No approved questions yet.</div>'; return; }
   el.innerHTML = rows.map(row => `
-    <div class="bank-item">
+    <div class="bank-item" id="bitem-${row.id}">
       <div style="flex:1">
         <div class="bank-item-q">${row.question}</div>
         <div class="bank-item-meta">
@@ -839,12 +839,63 @@ function renderBank(rows) {
           <span class="badge badge-deepcut" style="margin-left:4px">${row.mode}</span>
           <span style="margin-left:8px;font-size:11px;color:var(--text3)">${row.type==='mc'?'Multiple choice':'List'}</span>
         </div>
+        <div id="bmeta-${row.id}" style="display:none;margin-top:10px;padding:12px;background:var(--bg3);border-radius:var(--rsm);">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+            <div>
+              <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:4px;">Mode</label>
+              <select id="bm-mode-${row.id}" style="width:100%;padding:7px 10px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;">
+                <option value="classic" ${row.mode==='classic'?'selected':''}>Classic</option>
+                <option value="niche" ${row.mode==='niche'?'selected':''}>Name the Niche</option>
+                <option value="gauntlet" ${row.mode==='gauntlet'?'selected':''}>The Gauntlet</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:4px;">League</label>
+              <select id="bm-league-${row.id}" style="width:100%;padding:7px 10px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;">
+                ${['NFL','NBA','MLB','NHL','NCAA Football','NCAA Basketball'].map(l=>`<option value="${l}" ${row.league===l?'selected':''}>${l}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:4px;">Decade</label>
+              <select id="bm-decade-${row.id}" style="width:100%;padding:7px 10px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;">
+                ${['1970s','1980s','1990s','2000s','2010s','2020s','All eras'].map(d=>`<option value="${d}" ${(row.decade||'All eras')===d?'selected':''}>${d}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:4px;">Difficulty</label>
+              <select id="bm-diff-${row.id}" style="width:100%;padding:7px 10px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;">
+                ${['Easy','Medium','Hard','Extreme'].map(d=>`<option value="${d}" ${row.difficulty===d?'selected':''}>${d}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-green" style="font-size:12px;padding:6px 14px" onclick="saveBankMeta('${row.id}')">Save changes</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="toggleBankMeta('${row.id}')">Cancel</button>
+          </div>
+        </div>
       </div>
       <div class="bank-item-actions">
-        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="editBankItem('${row.id}')">Edit</button>
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="toggleBankMeta('${row.id}')">Edit tags</button>
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="editBankItem('${row.id}')">Edit content</button>
         <button class="btn btn-red" style="font-size:12px;padding:6px 12px" onclick="deleteBankItem('${row.id}')">Delete</button>
       </div>
     </div>`).join('');
+}
+
+function toggleBankMeta(id) {
+  const el = document.getElementById('bmeta-'+id);
+  if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+async function saveBankMeta(id) {
+  const mode     = document.getElementById('bm-mode-'+id)?.value;
+  const league   = document.getElementById('bm-league-'+id)?.value;
+  const decade   = document.getElementById('bm-decade-'+id)?.value;
+  const difficulty = document.getElementById('bm-diff-'+id)?.value;
+  const { error } = await sb.from('question_bank').update({ mode, league, decade, difficulty }).eq('id', id);
+  if (error) { showToast('Error saving: ' + error.message); return; }
+  showToast('✓ Tags updated');
+  loadBank();
 }
 
 async function deleteBankItem(id) {

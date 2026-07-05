@@ -21,27 +21,38 @@ module.exports = async function handler(req, res) {
       .select('*')
       .eq('status', 'approved')
       .eq('mode', mode)
-      .eq('league', league)
-      .eq('difficulty', difficulty);
+      .eq('league', league);
 
-    // For niche, no decade filter. For classic/gauntlet, match decade or "All eras"
-    if (mode !== 'niche' && decade && decade !== 'All eras') {
-      query = query.in('decade', [decade, 'All eras']);
+    // For niche: no decade or difficulty filter — use the whole niche bank for this league
+    // For classic/gauntlet: filter by difficulty and decade
+    if (mode !== 'niche') {
+      query = query.eq('difficulty', difficulty);
+      if (decade && decade !== 'All eras') {
+        query = query.in('decade', [decade, 'All eras']);
+      }
     }
 
-    // For classic, match format or mixed
+    // For classic, match format type
     if (mode === 'classic' && format && format !== 'Mixed') {
       query = query.in('type', [format === 'Multiple choice' ? 'mc' : 'list', 'mixed']);
     }
 
-    const { data: banked } = await query;
+    const { data: banked, error: bankError } = await query;
+    if (bankError) console.error('Bank query error:', bankError);
     const approved = banked || [];
+    console.log(`Bank query: mode=${mode} league=${league} → ${approved.length} approved questions found`);
 
     // Shuffle approved pool
     const shuffled = approved.sort(() => Math.random() - 0.5);
 
+    // For niche: if we have at least 1 approved question use the bank
+    // (better to play 1-2 bank questions than trigger slow generation)
+    if (mode === 'niche' && shuffled.length > 0) {
+      const questions = shuffled.slice(0, needed).map(r => r.data);
+      return res.status(200).json({ questions, source: 'bank' });
+    }
+
     if (shuffled.length >= needed) {
-      // Enough approved questions — use them entirely
       const questions = shuffled.slice(0, needed).map(r => r.data);
       return res.status(200).json({ questions, source: 'bank' });
     }

@@ -54,8 +54,8 @@
       text-align: center;
       padding: 2rem;
     }
-    .home-eyebrow { font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--text3); margin-bottom:14px; }
-    .home-logo { font-size:3.4rem; font-weight:700; letter-spacing:-2px; color:var(--blue); font-family:Georgia,'Times New Roman',serif; line-height:1; margin-bottom:12px; }
+    .home-logo { margin-bottom:12px; }
+    .home-logo img { max-width:320px; width:90%; height:auto; }
     .home-tagline { font-size:15px; color:var(--text2); margin-bottom:3rem; line-height:1.5; }
     .home-start-btn {
       padding: 15px 48px;
@@ -374,8 +374,7 @@
 
 <!-- ══════════════════════ HOME (splash) ══════════════════════ -->
 <div id="screen-home" class="screen active">
-  <div class="home-eyebrow">Sports Trivia</div>
-  <div class="home-logo">Ball Knowledge</div>
+  <div class="home-logo"><img src="/logo.png" alt="Ball Knowledge" /></div>
   <div class="home-tagline">Multiplayer sports trivia<br>No casual fans</div>
   <button class="home-start-btn" onclick="showScreen('modes')">Start</button>
   <button class="home-join-link" onclick="showScreen('join')">Join a game →</button>

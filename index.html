@@ -422,7 +422,7 @@
   </div>
 
   <div class="modes-footer">
-    <button class="btn-primary" id="mode-select-btn" onclick="goToSetup()">Select Classic →</button>
+    <button class="btn-primary" id="mode-select-btn" onclick="goToSetup()">Play Classic →</button>
     <button class="btn-secondary" onclick="showScreen('join')">Join a Game</button>
   </div>
 </div>
@@ -635,29 +635,33 @@ function onCarouselScroll() {
   if (!el) return;
   const idx = Math.round(el.scrollLeft / (el.offsetWidth - 48));
   const clamped = Math.max(0, Math.min(2, idx));
-  document.querySelectorAll('.mode-dot').forEach((d,i) => d.classList.toggle('active', i===clamped));
-  const labels = ['Classic','Name the Niche','The Gauntlet'];
-  const btn = document.getElementById('mode-select-btn');
-  if (btn) btn.textContent = `Select ${labels[clamped]} →`;
-  // Dim non-focused cards slightly
   const modes = ['classic','niche','gauntlet'];
+  const labels = ['Classic','Name the Niche','The Gauntlet'];
+
+  // Auto-select the visible card
+  selectedMode = modes[clamped];
+  settings.mode = selectedMode;
+
+  // Update dots
+  document.querySelectorAll('.mode-dot').forEach((d,i) => d.classList.toggle('active', i===clamped));
+
+  // Update button label
+  const btn = document.getElementById('mode-select-btn');
+  if (btn) btn.textContent = `Play ${labels[clamped]} →`;
+
+  // Update card selected state and opacity
   modes.forEach((m,i) => {
     const card = document.getElementById('mcard-'+m);
-    if (card) card.style.opacity = (i===clamped || card.classList.contains('selected')) ? '1' : '0.55';
+    if (!card) return;
+    card.classList.toggle('selected', i===clamped);
+    card.style.opacity = i===clamped ? '1' : '0.55';
   });
 }
 
 function selectMode(m) {
+  // Kept for programmatic use — scroll handler handles UI updates
   selectedMode = m;
   settings.mode = m;
-  ['classic','niche','gauntlet'].forEach(id => {
-    document.getElementById('mcard-'+id)?.classList.remove('selected');
-    document.getElementById('mcard-'+id) && (document.getElementById('mcard-'+id).style.opacity='1');
-  });
-  document.getElementById('mcard-'+m)?.classList.add('selected');
-  const info = MODE_INFO[m];
-  const btn = document.getElementById('mode-select-btn');
-  if (btn) btn.textContent = `Select ${info.label} →`;
 }
 
 function goToSetup() {

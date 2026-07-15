@@ -55,8 +55,7 @@
       padding: 2rem;
     }
     .home-logo { margin-bottom:16px; width:90%; max-width:360px; }
-    .home-logo img { width:100%; height:auto; mix-blend-mode: multiply; }
-    .home-tagline { font-size:15px; color:var(--text2); margin-bottom:3rem; line-height:1.5; }
+    .home-logo img { width:100%; height:auto; mix-blend-mode:multiply; }
     .home-start-btn {
       padding: 15px 48px;
       border-radius: var(--r);
@@ -475,7 +474,7 @@
       </div>
     </div>
 
-    <div class="field">
+    <div class="field" id="difficulty-field">
       <label>Difficulty</label>
       <div class="diff-grid">
         <div class="diff-card" id="diff-Easy" onclick="pick('difficulty','Easy')">
@@ -515,7 +514,7 @@
       <div class="sum-row"><span class="sum-key">League</span><span class="sum-val" id="s-league">—</span></div>
       <div class="sum-row" id="s-format-row"><span class="sum-key">Format</span><span class="sum-val" id="s-format">—</span></div>
       <div class="sum-row" id="s-decade-row"><span class="sum-key">Decade</span><span class="sum-val" id="s-decade">—</span></div>
-      <div class="sum-row"><span class="sum-key">Difficulty</span><span class="sum-val" id="s-difficulty">—</span></div>
+      <div class="sum-row" id="s-difficulty-row"><span class="sum-key">Difficulty</span><span class="sum-val" id="s-difficulty">—</span></div>
       <div class="sum-row" id="s-qcount-row"><span class="sum-key">Questions</span><span class="sum-val" id="s-qcount">10</span></div>
     </div>
 
@@ -674,13 +673,15 @@ function goToSetup() {
 
   document.getElementById('format-field').style.display = (selectedMode === 'classic') ? '' : 'none';
   document.getElementById('s-format-row').style.display = (selectedMode === 'classic') ? '' : 'none';
-  document.getElementById('decade-field').style.display = isNiche ? 'none' : '';
-  document.getElementById('s-decade-row').style.display = isNiche ? 'none' : '';
+  document.getElementById('decade-field').style.display = '';
+  document.getElementById('s-decade-row').style.display = '';
+  document.getElementById('difficulty-field').style.display = isNiche ? 'none' : '';
+  document.getElementById('s-difficulty-row').style.display = isNiche ? 'none' : '';
   document.getElementById('qcount-field').style.display = isNiche ? 'none' : '';
   document.getElementById('s-qcount-row').style.display = isNiche ? 'none' : '';
 
   if (selectedMode !== 'classic') { settings.format = 'Multiple choice'; document.getElementById('s-format').textContent = 'Auto'; }
-  if (isNiche) { settings.decade = 'All eras'; settings.qcount = 3; document.getElementById('s-decade').textContent='All eras'; document.getElementById('s-qcount').textContent='3 rounds'; }
+  if (isNiche) { settings.difficulty = 'Medium'; settings.qcount = 3; document.getElementById('s-difficulty').textContent = 'Medium'; document.getElementById('s-qcount').textContent = '3 rounds'; }
 
   validateSetup();
   showScreen('setup');
@@ -708,10 +709,11 @@ function pick(key, val) {
 function validateSetup() {
   const isClassic = selectedMode === 'classic';
   const isNiche = selectedMode === 'niche';
-  const ok = settings.league && settings.difficulty &&
+  const ok = settings.league &&
     document.getElementById('host-name').value.trim() &&
     (!isClassic || settings.format) &&
-    (isNiche || settings.decade);
+    (!isClassic || settings.difficulty) &&
+    (isNiche ? settings.decade : (settings.difficulty && settings.decade));
   document.getElementById('create-btn').disabled = !ok;
 }
 

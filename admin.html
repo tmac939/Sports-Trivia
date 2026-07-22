@@ -182,7 +182,7 @@
               <option value="All eras">All eras</option>
             </select>
           </div>
-          <div class="field" style="margin:0">
+          <div class="field" id="paste-difficulty-field" style="margin:0">
             <label>Difficulty</label>
             <select id="paste-difficulty">
               <option value="Easy">Easy</option>
@@ -359,7 +359,9 @@ function updateGenMode() {
 // ── PASTE QUESTIONS ──
 function updatePasteMode() {
   const mode = document.getElementById('paste-mode').value;
-  document.getElementById('paste-decade-field').style.display = mode === 'niche' ? 'none' : '';
+  const isNiche = mode === 'niche';
+  document.getElementById('paste-decade-field').style.display = '';
+  document.getElementById('paste-difficulty-field').style.display = isNiche ? 'none' : '';
 }
 
 function toggleGenPanel() {
@@ -385,8 +387,8 @@ async function pasteQuestions() {
 
   const mode = document.getElementById('paste-mode').value;
   const league = document.getElementById('paste-league').value;
-  const decade = mode === 'niche' ? 'All eras' : document.getElementById('paste-decade').value;
-  const difficulty = document.getElementById('paste-difficulty').value;
+  const decade = document.getElementById('paste-decade').value;
+  const difficulty = mode === 'niche' ? 'Medium' : document.getElementById('paste-difficulty').value;
 
   const rows = questions.map(q => ({
     mode, league, decade, difficulty,

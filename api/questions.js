@@ -6,14 +6,17 @@ module.exports = async function handler(req, res) {
   const { settings, roomId } = req.body;
   if (!settings || !roomId) return res.status(400).json({ error: 'Missing settings or roomId' });
 
-  const { league, decade, difficulty, mode = 'classic', format, qcount = 10 } = settings;
+  const { league, leagues, decade, difficulty, mode = 'classic', format, qcount = 10 } = settings;
+  // Support both single league (legacy) and leagues array (new multi-select)
+  const leagueList = leagues && leagues.length > 0 ? leagues : (league ? [league] : []);
 
   const sb = createClient(
     process.env.SUPABASE_URL || 'https://dvdcwpqixtnlzdhkvgik.supabase.co',
     process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY
   );
 
-  const needed = mode === 'niche' ? 3 : mode === 'gauntlet' ? 12 : qcount;
+  const nicheRounds = settings.nicheRounds || 3;
+  const needed = mode === 'niche' ? nicheRounds : mode === 'gauntlet' ? 12 : qcount;
 
   try {
     // ── Pull from approved question bank first ──
@@ -21,9 +24,9 @@ module.exports = async function handler(req, res) {
       .select('*')
       .eq('status', 'approved')
       .eq('mode', mode)
-      .eq('league', league);
+      .in('league', leagueList);
 
-    // For niche: no decade or difficulty filter — use the whole niche bank for this league
+    // For niche: no decade or difficulty filter — use the whole niche bank for selected leagues
     // For classic/gauntlet: filter by difficulty and decade
     if (mode !== 'niche') {
       query = query.eq('difficulty', difficulty);
@@ -40,7 +43,7 @@ module.exports = async function handler(req, res) {
     const { data: banked, error: bankError } = await query;
     if (bankError) console.error('Bank query error:', bankError);
     const approved = banked || [];
-    console.log(`Bank query: mode=${mode} league=${league} → ${approved.length} approved questions found`);
+    console.log(`Bank query: mode=${mode} leagues=${leagueList.join(',')} → ${approved.length} approved questions found`);
 
     // Shuffle approved pool
     const shuffled = approved.sort(() => Math.random() - 0.5);

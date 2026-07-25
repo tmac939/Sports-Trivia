@@ -440,15 +440,14 @@
     </div>
 
     <div class="field">
-      <label>League</label>
+      <label>League <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(select one or more)</span></label>
       <div class="chip-row" id="league-chips">
-        <div class="chip" onclick="pick('league','NFL')">NFL</div>
-        <div class="chip" onclick="pick('league','NBA')">NBA</div>
-        <div class="chip" onclick="pick('league','MLB')">MLB</div>
-        <div class="chip" onclick="pick('league','NHL')">NHL</div>
-        <div class="chip" onclick="pick('league','NCAA Football')">NCAA Football</div>
-        <div class="chip" onclick="pick('league','NCAA Basketball')">NCAA Basketball</div>
-        <div class="chip" onclick="pick('league','Mixed')">Mix it up</div>
+        <div class="chip" onclick="toggleLeague('NFL')">NFL</div>
+        <div class="chip" onclick="toggleLeague('NBA')">NBA</div>
+        <div class="chip" onclick="toggleLeague('MLB')">MLB</div>
+        <div class="chip" onclick="toggleLeague('NHL')">NHL</div>
+        <div class="chip" onclick="toggleLeague('NCAA Football')">NCAA Football</div>
+        <div class="chip" onclick="toggleLeague('NCAA Basketball')">NCAA Basketball</div>
       </div>
     </div>
 
@@ -509,6 +508,14 @@
       </div>
     </div>
 
+    <div class="field" id="niche-rounds-field" style="display:none">
+      <label>Number of Rounds</label>
+      <div class="chip-row" id="niche-rounds-chips">
+        <div class="chip selected" onclick="pickNicheRounds(3)">3 rounds</div>
+        <div class="chip" onclick="pickNicheRounds(5)">5 rounds</div>
+      </div>
+    </div>
+
     <div class="summary-card">
       <div class="sum-row"><span class="sum-key">Mode</span><span class="sum-val" id="s-mode">—</span></div>
       <div class="sum-row"><span class="sum-key">League</span><span class="sum-val" id="s-league">—</span></div>
@@ -516,6 +523,7 @@
       <div class="sum-row" id="s-decade-row"><span class="sum-key">Decade</span><span class="sum-val" id="s-decade">—</span></div>
       <div class="sum-row" id="s-difficulty-row"><span class="sum-key">Difficulty</span><span class="sum-val" id="s-difficulty">—</span></div>
       <div class="sum-row" id="s-qcount-row"><span class="sum-key">Questions</span><span class="sum-val" id="s-qcount">10</span></div>
+      <div class="sum-row" id="s-rounds-row" style="display:none"><span class="sum-key">Rounds</span><span class="sum-val" id="s-rounds">3</span></div>
     </div>
 
     <button class="btn-primary" id="create-btn" onclick="createRoom()" disabled>Create Room →</button>
@@ -619,7 +627,8 @@ let gauntletLives=3, gauntletEliminated=false;
 let selectedMode='classic';
 
 // ── SETTINGS ──
-const settings = { league:null, format:null, decade:null, difficulty:null, qcount:10, mode:'classic' };
+const settings = { leagues:[], format:null, decade:null, difficulty:null, qcount:10, mode:'classic', nicheRounds:3 };
+let selectedLeagues = []; // multi-select array
 
 const MODE_INFO = {
   classic:  { label:'Classic',        badge:'badge-classic',  info:'Multiple choice or list questions. Everyone answers each round. Most points wins.' },
@@ -662,7 +671,29 @@ function selectMode(m) {
   settings.mode = m;
 }
 
-function goToSetup() {
+function toggleLeague(league) {
+  const idx = selectedLeagues.indexOf(league);
+  if (idx === -1) selectedLeagues.push(league);
+  else selectedLeagues.splice(idx, 1);
+  // Update chip visuals
+  document.getElementById('league-chips').querySelectorAll('.chip').forEach(c => {
+    c.classList.toggle('selected', selectedLeagues.includes(c.textContent.trim()));
+  });
+  settings.leagues = [...selectedLeagues];
+  // Update summary
+  const el = document.getElementById('s-league');
+  if (el) el.textContent = selectedLeagues.length === 0 ? '—' : selectedLeagues.join(', ');
+  validateSetup();
+}
+
+function pickNicheRounds(n) {
+  settings.nicheRounds = n;
+  document.getElementById('niche-rounds-chips').querySelectorAll('.chip').forEach(c => {
+    c.classList.toggle('selected', c.textContent.trim() === n + ' rounds');
+  });
+  const el = document.getElementById('s-rounds');
+  if (el) el.textContent = n;
+}
   settings.mode = selectedMode;
   const info = MODE_INFO[selectedMode];
   document.getElementById('setup-title').textContent = info.label + ' — Settings';
@@ -679,9 +710,11 @@ function goToSetup() {
   document.getElementById('s-difficulty-row').style.display = isNiche ? 'none' : '';
   document.getElementById('qcount-field').style.display = isNiche ? 'none' : '';
   document.getElementById('s-qcount-row').style.display = isNiche ? 'none' : '';
+  document.getElementById('niche-rounds-field').style.display = isNiche ? '' : 'none';
+  document.getElementById('s-rounds-row').style.display = isNiche ? '' : 'none';
 
   if (selectedMode !== 'classic') { settings.format = 'Multiple choice'; document.getElementById('s-format').textContent = 'Auto'; }
-  if (isNiche) { settings.difficulty = 'Medium'; settings.qcount = 3; document.getElementById('s-difficulty').textContent = 'Medium'; document.getElementById('s-qcount').textContent = '3 rounds'; }
+  if (isNiche) { settings.difficulty = 'Medium'; settings.nicheRounds = 3; document.getElementById('s-difficulty').textContent = 'Medium'; }
 
   validateSetup();
   showScreen('setup');
@@ -689,7 +722,7 @@ function goToSetup() {
 
 function pick(key, val) {
   settings[key] = val;
-  const groups = { league:'league-chips', format:'format-chips', decade:'decade-chips', qcount:'qcount-chips' };
+  const groups = { format:'format-chips', decade:'decade-chips', qcount:'qcount-chips' };
   if (groups[key]) {
     document.getElementById(groups[key]).querySelectorAll('.chip').forEach(c => {
       c.classList.toggle('selected', c.textContent.trim() === String(val));
@@ -700,7 +733,7 @@ function pick(key, val) {
     const el = document.getElementById('diff-' + val);
     if (el) el.classList.add('selected');
   }
-  const smap = { league:'s-league', format:'s-format', decade:'s-decade', difficulty:'s-difficulty', qcount:'s-qcount' };
+  const smap = { format:'s-format', decade:'s-decade', difficulty:'s-difficulty', qcount:'s-qcount' };
   const el = document.getElementById(smap[key]);
   if (el) el.textContent = val;
   validateSetup();
@@ -709,7 +742,7 @@ function pick(key, val) {
 function validateSetup() {
   const isClassic = selectedMode === 'classic';
   const isNiche = selectedMode === 'niche';
-  const ok = settings.league &&
+  const ok = selectedLeagues.length > 0 &&
     document.getElementById('host-name').value.trim() &&
     (!isClassic || settings.format) &&
     (!isClassic || settings.difficulty) &&
@@ -731,7 +764,7 @@ async function createRoom() {
   if (!name) return;
   myName = name; isHost = true;
   const code = genCode(); myRoomId = code;
-  const { error } = await sb.from('rooms').insert({ id:code, host_name:name, settings:{...settings}, status:'lobby', current_question:0 });
+  const { error } = await sb.from('rooms').insert({ id:code, host_name:name, settings:{...settings, leagues:selectedLeagues}, status:'lobby', current_question:0 });
   if (error) { showToast('Error creating room'); return; }
   const { data:player } = await sb.from('players').insert({ room_id:code, name:myName, score:0, answers:[] }).select().single();
   myPlayerId = player.id;
@@ -841,7 +874,10 @@ function startGameScreen() {
   listFound = []; myScore = 0;
   gauntletLives = 3; gauntletEliminated = false;
   subscribeToRoom(myRoomId);
-  if (settings.mode === 'niche') { showScreen('niche'); startNicheRound(); return; }
+  if (settings.mode === 'niche') {
+    NICHE_ROUNDS = currentRoom?.settings?.nicheRounds || settings.nicheRounds || 3;
+    showScreen('niche'); startNicheRound(); return;
+  }
   showScreen('game');
   renderQuestion(); startTimer();
 }
@@ -1035,7 +1071,8 @@ async function advanceQuestion() {
 // ══ NAME THE NICHE ══
 // ─────────────────────────────────────────────
 let nicheRoundIdx = 0;
-const NICHE_ROUNDS = 3;
+// NICHE_ROUNDS is set dynamically from room settings when game starts
+let NICHE_ROUNDS = 3;
 
 function startNicheRound() {
   nicheFound = []; nicheRoundIdx = 0;

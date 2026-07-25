@@ -1043,6 +1043,14 @@ function startNicheRound() {
   startNicheTimer();
 }
 
+// Allow external round_end override (for non-host clients reading from Supabase)
+let _nicheRoundEndAt = null;
+
+function startNicheTimerAt(endAt) {
+  _nicheRoundEndAt = endAt;
+  startNicheTimer();
+}
+
 function renderNicheQuestion() {
   const q = questions[nicheRoundIdx] || questions[0];
   if (!q) return;
@@ -1065,9 +1073,17 @@ function renderNicheQuestion() {
 
 function startNicheTimer() {
   if(nicheTimer) clearInterval(nicheTimer);
-  let t = NICHE_TIME;
+
+  // Host writes the round end timestamp; non-hosts read it from room data
+  const roundEndAt = _nicheRoundEndAt || (Date.now() + NICHE_TIME * 1000);
+  _nicheRoundEndAt = null; // reset after use
+
+  if(isHost) {
+    sb.from('rooms').update({ current_round_end: roundEndAt }).eq('id', myRoomId);
+  }
+
   nicheTimer = setInterval(async()=>{
-    t--;
+    const t = Math.max(0, Math.round((roundEndAt - Date.now()) / 1000));
     const el = document.getElementById('niche-timer-big');
     if(el){ el.textContent=t; el.classList.toggle('urgent',t<=15); }
     if(t<=0){
@@ -1083,7 +1099,7 @@ function startNicheTimer() {
         else showResults();
       }
     }
-  },1000);
+  },500); // Poll every 500ms for smoother accuracy
 }
 
 function handleNicheInput() {
@@ -1111,9 +1127,14 @@ function handleNicheInput() {
   }
 
   if(hitIdx === -1) {
-    // Check if it matches an already-found answer (don't show miss feedback while still typing)
-    const alreadyFound = (q.items||[]).some((_,i)=>nicheFound.some(f=>f.idx===i) && matchesAnswer(i));
-    if(alreadyFound) {
+    // Only show "already found" if typed text is an EXACT match to an already-found answer
+    // Don't clear while still typing (e.g. "ben" shouldn't block typing "bennett")
+    const exactAlreadyFound = nicheFound.some(f => {
+      const foundAliases = (q.aliases?.[f.idx]||[norm(q.items[f.idx])]).map(a=>norm(a));
+      const foundLastName = norm(q.items[f.idx]).split(' ').pop();
+      return [...foundAliases, foundLastName].includes(t);
+    });
+    if(exactAlreadyFound) {
       const fb=document.getElementById('niche-fb');
       if(fb){fb.textContent='Already got that one!';fb.className='niche-fb miss';}
       inp.value='';
@@ -1213,6 +1234,16 @@ window.addEventListener('load',()=>{
   const params=new URLSearchParams(location.search);
   const code=params.get('join');
   if(code){ showScreen('join'); document.getElementById('join-code').value=code.toUpperCase(); }
+});
+
+// ── PREVENT ACCIDENTAL REFRESH DURING GAME ──
+window.addEventListener('beforeunload', e => {
+  const activeScreen = document.querySelector('.screen.active');
+  const id = activeScreen ? activeScreen.id : '';
+  if(id === 'screen-game' || id === 'screen-niche') {
+    e.preventDefault();
+    e.returnValue = '';
+  }
 });
 </script>
 </body>
